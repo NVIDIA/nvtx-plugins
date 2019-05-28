@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+artifacts/
+docs/build
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+core
+
+# Python IDEs
+.idea/
+.vscode/
+
+# nsys files
+*.adrep
+*.qdstrm
+
+venv/
