@@ -22,7 +22,13 @@ core
 .vscode/
 
 # nsys files
-*.adrep
+*.qdrep
 *.qdstrm
 
+# Virtual envs
 venv/
+
+# Misc
+nogit/
+
+update_authors.sh
