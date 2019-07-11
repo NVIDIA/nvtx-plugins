@@ -1,3 +1,4 @@
+
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
@@ -9,7 +10,7 @@ sphinx:
   configuration: docs/conf.py
 
 build:
-  image: latest  # For python 3.6
+  image: latest  # For python 3.7
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats: all

@@ -17,13 +17,13 @@ import os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.append(os.path.abspath(<path>))
-sys.path.append(os.path.abspath('../examples/'))
-sys.path.append(os.path.abspath('../nvtx_plugins/python'))
 
-import nvtx.plugins.tf
-from nvtx.plugins.tf.package_info import __version__
-
+sys.path.insert(0, os.path.abspath("../"))  # Important
+sys.path.insert(0, os.path.abspath(os.path.join("..", "nvtx_plugins")))  # Important
+sys.path.insert(0, os.path.abspath(os.path.join("..", "nvtx_plugins", "python")))  # Important
+sys.path.insert(0, os.path.abspath(os.path.join("..", "nvtx_plugins", "python", "nvtx")))  # Important
+sys.path.insert(0, os.path.abspath(os.path.join("..", "nvtx_plugins", "python", "nvtx", "plugins")))  # Important
+sys.path.insert(0, os.path.abspath(os.path.join("..", "nvtx_plugins", "python", "nvtx", "plugins", "tf")))  # Important
 
 # -- General configuration -----------------------------------------------------
 
@@ -81,7 +81,9 @@ copyright = u'Nvidia'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-#
+
+from package_info import __version__
+
 # The short X.Y version.
 version = __version__
 
