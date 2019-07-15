@@ -30,5 +30,5 @@ docs_html:
 	$(MAKE) -C docs html
 
 clean:
-	rm -rf $(TARGET_LIB) ${WHEEL_DEST}
+	rm -rf build/ $(TARGET_LIB) ${WHEEL_DEST}
 	$(MAKE) -C docs clean

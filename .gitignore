@@ -32,3 +32,5 @@ venv/
 nogit/
 
 update_authors.sh
+
+nvtx_plugins/python/nvtx_plugins_tf\.egg-info/
