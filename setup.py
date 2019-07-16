@@ -23,7 +23,6 @@ import sys
 from setuptools import setup
 from setuptools import Extension
 
-
 sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins")))  # Important
 sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python")))  # Important
 sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx")))  # Important
@@ -39,12 +38,6 @@ from package_info import __download_url__
 from package_info import __description__
 from package_info import __license__
 from package_info import __keywords__
-
-# g++ -I/usr/local/lib/python3.5/dist-packages/tensorflow/include -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -O2 \
-# -std=c++11 -I/usr/local/cuda/include -o nvtx_plugins/python/nvtx/plugins/tf/lib/nvtx_ops.so \
-# nvtx_plugins/cc/nvtx_kernels.cc nvtx_plugins/cc/nvtx_ops.cc \
-# -shared -L/usr/local/lib/python3.5/dist-packages/tensorflow -ltensorflow_framework \
-# -L/usr/local/cuda/lib64 -lnvToolsExt
 
 from build_utils import custom_build_ext
 

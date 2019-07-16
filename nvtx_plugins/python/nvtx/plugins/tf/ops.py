@@ -33,7 +33,6 @@ def _load_library(name):
     Raises:
       NotFoundError if were not able to load .so file.
     """
-    print("NAME:", name)
 
     filename = resource_loader.get_path_to_datafile(name)
     library = load_library.load_op_library(filename)

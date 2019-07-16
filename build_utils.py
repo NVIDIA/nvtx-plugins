@@ -1,7 +1,8 @@
 # ! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-
+# Code Inspired by: https://github.com/horovod/horovod/blob/master/setup.py
+#
 # Copyright 2019 Uber Technologies, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +17,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+#
+# Modified by NVIDIA to fit our requirements
+#
+# Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import re
 import shlex
-import stat
 import subprocess
 import sys
 import textwrap
 import traceback
 
-from copy import deepcopy
 from contextlib import contextmanager
 
 from distutils.errors import CompileError
@@ -130,7 +145,9 @@ def find_matching_gcc_compiler_path(gxx_compiler_version):
             if compiler_version == gxx_compiler_version:
                 return compiler
 
-    print('INFO: Unable to find gcc compiler (version %s).'  % gxx_compiler_version)
+    print("=========================================================================")
+    print('INFO: Unable to find gcc compiler (version %s).' % gxx_compiler_version)
+    print("===========================================================================================")
     return None
 
 
@@ -350,20 +367,23 @@ class custom_build_ext(build_ext):
                 built_plugins.append(True)
 
             else:
+                print("===========================================================================================")
                 print(
                     'INFO: TensorFlow plugin building is skipped, remove the environment variable: `%s`.\n\n' %
                     'NVTX_PLUGINS_WITHOUT_TENSORFLOW',
                     file=sys.stderr
                 )
+                print("===========================================================================================")
 
                 built_plugins.append(False)
 
         except:
-
+            print("===========================================================================================")
             print(
                 'INFO: Unable to build TensorFlow plugin, will skip it.\n\n%s' % traceback.format_exc(),
                 file=sys.stderr
             )
+            print("===========================================================================================")
 
             built_plugins.append(False)
 
@@ -429,19 +449,20 @@ def build_tf_extension(build_ext, tf_lib, options):
                     compiler_version = candidate_compiler_version
 
             else:
-                print("################################################################################")
+                print("===========================================================================================")
                 print(
                     'INFO: Compiler %s (version %s) is not usable for this TensorFlow '
                     'installation. Require g++ (version >=%s, <%s).' %
                     (candidate_cxx_compiler, candidate_compiler_version, tf_compiler_version, maximum_compiler_version)
                 )
-                print("################################################################################")
+                print("===========================================================================================")
 
         if cc_compiler:
-            print("################################################################################")
-            print('INFO: Compilers %s and %s (version %s) selected for TensorFlow plugin build.'
-                  '' % (cc_compiler, cxx_compiler, compiler_version))
-            print("################################################################################")
+            print("===========================================================================================")
+            print('INFO: Compilers %s and %s (version %s) selected for TensorFlow plugin build.' % (
+                cc_compiler, cxx_compiler, compiler_version
+            ))
+            print("===========================================================================================")
 
         else:
             raise DistutilsPlatformError(
@@ -460,12 +481,7 @@ def build_tf_extension(build_ext, tf_lib, options):
                 except (AttributeError, ValueError):
                     pass
 
-                import pprint
-                pprint.pprint(build_ext.__dict__)
-                pprint.pprint(build_ext.compiler.__dict__)
-
                 build_ext.build_extension(tf_lib)
-                print("================= END ==================")
         finally:
             # Revert to the default compiler settings
             customize_compiler(build_ext.compiler)
@@ -531,10 +547,6 @@ def test_compile(build_ext, name, code, libraries=None, include_dirs=None, libra
         build_ext.compiler.compiler_so.remove("-Wstrict-prototypes")
     except (AttributeError, ValueError):
         pass
-
-    print("================================================================")
-    print("COMPILER:", compiler.__dict__)
-    print("================================================================")
 
     compiler.compile(
         [source_file],
@@ -653,16 +665,23 @@ def determine_gcc_version(compiler):
     try:
         compiler_macros = subprocess.check_output(
             '%s -dM -E - </dev/null' % compiler,
-            shell=True, universal_newlines=True).split('\n')
+            shell=True,
+            universal_newlines=True
+        ).split('\n')
+
         for m in compiler_macros:
             version_match = re.match('^#define __VERSION__ "(.*?)"$', m)
             if version_match:
                 return LooseVersion(version_match.group(1))
+
+        print("===========================================================================================")
         print('INFO: Unable to determine version of the compiler %s.' % compiler)
+        print("===========================================================================================")
 
     except subprocess.CalledProcessError:
-        print('INFO: Unable to determine version of the compiler %s.\n%s'
-              '' % (compiler, traceback.format_exc()))
+        print("===========================================================================================")
+        print('INFO: Unable to determine version of the compiler %s.\n%s' % (compiler, traceback.format_exc()))
+        print("===========================================================================================")
 
     return None
 
