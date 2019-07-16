@@ -39,7 +39,7 @@ from package_info import __description__
 from package_info import __license__
 from package_info import __keywords__
 
-from build_utils import custom_build_ext
+from setup_utils import custom_build_ext
 
 REQUIRED_PACKAGES = [
     'tensorflow-gpu',
@@ -127,10 +127,6 @@ setup(
 
     # Add in any packaged data.
     include_package_data=True,
-    package_data={
-        'python_files': ['*.py'],
-        'build_files': ['*.lds']
-    },
 
     zip_safe=False,
 
