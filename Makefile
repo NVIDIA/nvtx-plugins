@@ -30,5 +30,6 @@ docs_html:
 	$(MAKE) -C docs html
 
 clean:
-	rm -rf build/ $(TARGET_LIB) ${WHEEL_DEST}
+	rm -rf build/ dist/ __pycache__/ **/__pycache__
+	rm -rf $(TARGET_LIB) ${WHEEL_DEST}
 	$(MAKE) -C docs clean

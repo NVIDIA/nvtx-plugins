@@ -216,13 +216,17 @@ def get_cpp_flags(build_ext):
 def get_link_flags(build_ext):
 
     last_err = None
-    libtool_flags = ['-Wl,-exported_symbols_list,nvtx_plugins.exp']
+
+    libtool_flags = ['-Wl,-exported_symbols_list']
     ld_flags = ['-Wl,--version-script=nvtx_plugins.lds']
+
     if sys.platform == 'darwin':
         flags_to_try = [libtool_flags, ld_flags]
     else:
         flags_to_try = [ld_flags, libtool_flags]
+
     for link_flags in flags_to_try:
+
         try:
             test_compile(build_ext, 'test_link_flags',
                          extra_link_preargs=link_flags,
@@ -232,8 +236,10 @@ def get_link_flags(build_ext):
                     '''))
 
             return link_flags
+
         except (CompileError, LinkError):
             last_err = 'Unable to determine C++ link flags (see error above).'
+
         except Exception:
             last_err = 'Unable to determine C++ link flags.  ' \
                        'Last error:\n\n%s' % traceback.format_exc()
@@ -301,10 +307,7 @@ def get_common_options(build_ext):
 
     INCLUDES = []
 
-    SOURCES = [
-        # 'nvtx_plugins/cc/nvtx_kernels.cc',
-        # 'nvtx_plugins/cc/nvtx_ops.cc',
-    ]
+    SOURCES = []
 
     COMPILE_FLAGS = cpp_flags
     LINK_FLAGS = link_flags
@@ -342,18 +345,27 @@ class custom_build_ext(build_ext):
         built_plugins = []
 
         try:
-            build_tf_extension(self, self._tf_lib, options)
-            built_plugins.append(True)
-
-        except:
-            if not os.environ.get('NVTX_PLUGINS_WITH_TENSORFLOW'):
-                print(
-                    'INFO: Unable to build TensorFlow plugin, will skip it.\n\n'
-                    '%s' % traceback.format_exc(), file=sys.stderr)
-                built_plugins.append(False)
+            if not os.environ.get('NVTX_PLUGINS_WITHOUT_TENSORFLOW', False):
+                build_tf_extension(self, self._tf_lib, options)
+                built_plugins.append(True)
 
             else:
-                raise
+                print(
+                    'INFO: TensorFlow plugin building is skipped, remove the environment variable: `%s`.\n\n' %
+                    'NVTX_PLUGINS_WITHOUT_TENSORFLOW',
+                    file=sys.stderr
+                )
+
+                built_plugins.append(False)
+
+        except:
+
+            print(
+                'INFO: Unable to build TensorFlow plugin, will skip it.\n\n%s' % traceback.format_exc(),
+                file=sys.stderr
+            )
+
+            built_plugins.append(False)
 
         if not built_plugins:
             raise DistutilsError('TensorFlow NVTX plugin was excluded from build. Aborting.')
@@ -370,11 +382,7 @@ def build_tf_extension(build_ext, tf_lib, options):
     tf_lib.define_macros = options['MACROS']
     tf_lib.include_dirs = options['INCLUDES']
 
-    #tf_lib.sources = options['SOURCES'] + []
-    tf_lib.sources = options['SOURCES'] + [
-        'nvtx_plugins/cc/nvtx_ops.cc',
-        'nvtx_plugins/cc/nvtx_kernels.cc',
-    ]
+    tf_lib.sources = options['SOURCES'] + tf_lib.sources
 
     tf_lib.extra_compile_args = options['COMPILE_FLAGS'] + tf_compile_flags
     tf_lib.extra_link_args = options['LINK_FLAGS'] + tf_link_flags
@@ -384,13 +392,17 @@ def build_tf_extension(build_ext, tf_lib, options):
 
     cc_compiler = cxx_compiler = cflags = cppflags = None
 
-    if sys.platform.startswith('linux') and not os.getenv('CC') and not os.getenv('CXX'):
+    if not sys.platform.startswith('linux'):
+        raise EnvironmentError("Only Linux Systems are supported")
+
+    if not os.getenv('CC') and not os.getenv('CXX'):
         # Determine g++ version compatible with this TensorFlow installation
         import tensorflow as tf
 
         if hasattr(tf, 'version'):
             # Since TensorFlow 1.13.0
             tf_compiler_version = LooseVersion(tf.version.COMPILER_VERSION)
+
         else:
             tf_compiler_version = LooseVersion(tf.COMPILER_VERSION)
 
@@ -442,7 +454,18 @@ def build_tf_extension(build_ext, tf_lib, options):
         try:
             with env(CC=cc_compiler, CXX=cxx_compiler, CFLAGS=cflags, CPPFLAGS=cppflags, LDSHARED=ldshared):
                 customize_compiler(build_ext.compiler)
+
+                try:
+                    build_ext.compiler.compiler_so.remove("-Wstrict-prototypes")
+                except (AttributeError, ValueError):
+                    pass
+
+                import pprint
+                pprint.pprint(build_ext.__dict__)
+                pprint.pprint(build_ext.compiler.__dict__)
+
                 build_ext.build_extension(tf_lib)
+                print("================= END ==================")
         finally:
             # Revert to the default compiler settings
             customize_compiler(build_ext.compiler)
@@ -501,19 +524,32 @@ def test_compile(build_ext, name, code, libraries=None, include_dirs=None, libra
 
     compiler = build_ext.compiler
 
+    [object_file] = compiler.object_filenames([source_file])
+    shared_object_file = compiler.shared_object_filename(name, output_dir=test_compile_dir)
+
+    try:
+        build_ext.compiler.compiler_so.remove("-Wstrict-prototypes")
+    except (AttributeError, ValueError):
+        pass
+
     print("================================================================")
     print("COMPILER:", compiler.__dict__)
     print("================================================================")
 
-    [object_file] = compiler.object_filenames([source_file])
-    shared_object_file = compiler.shared_object_filename(name, output_dir=test_compile_dir)
+    compiler.compile(
+        [source_file],
+        extra_preargs=extra_compile_preargs,
+        include_dirs=include_dirs,
+        macros=macros
+    )
 
-    compiler.compile([source_file], extra_preargs=extra_compile_preargs,
-                     include_dirs=include_dirs, macros=macros)
     compiler.link_shared_object(
-        [object_file], shared_object_file, libraries=libraries,
+        [object_file],
+        shared_object_file,
+        libraries=libraries,
         library_dirs=library_dirs,
-        extra_preargs=extra_link_preargs)
+        extra_preargs=extra_link_preargs
+    )
 
     return shared_object_file
 

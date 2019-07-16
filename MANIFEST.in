@@ -1,1 +1,3 @@
 recursive-include nvtx_plugins/ *.so
+include *.py
+include *.lds

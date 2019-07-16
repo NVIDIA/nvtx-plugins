@@ -53,7 +53,13 @@ REQUIRED_PACKAGES = [
     'wrapt'
 ]
 
-tensorflow_nvtx_lib = Extension('nvtx.plugins.tf.lib.nvtx_ops', [])
+tensorflow_nvtx_lib = Extension(
+    'nvtx.plugins.tf.lib.nvtx_ops',
+    sources=[
+        'nvtx_plugins/cc/nvtx_ops.cc',
+        'nvtx_plugins/cc/nvtx_kernels.cc',
+    ]
+)
 
 setup(
     name=__package_name__,
@@ -128,6 +134,11 @@ setup(
 
     # Add in any packaged data.
     include_package_data=True,
+    package_data={
+        'python_files': ['*.py'],
+        'build_files': ['*.lds']
+    },
+
     zip_safe=False,
 
     # PyPI package information.

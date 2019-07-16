@@ -14,14 +14,12 @@
 # -shared -L/usr/local/lib/python3.5/dist-packages/tensorflow -ltensorflow_framework \
 # -L/usr/local/cuda/lib64 -lnvToolsExt
 
-BASE_DIR="/usr/local/lib/python3.5/dist-packages/nvtx_plugins_tf-0.1.0-py3.5-linux-x86_64.egg"
+BASE_DIR="/usr/local/lib/python3.5/dist-packages/nvtx_plugins-0.1.0-py3.5-linux-x86_64.egg"
 
 make clean
 
-NVTX_PLUGINS_WITH_TENSORFLOW=1 python setup.py install
-
-cp "${BASE_DIR}/nvtx/plugins/tf/lib/nvtx_ops.cpython-35m-x86_64-linux-gnu.so" \
-   "${BASE_DIR}/nvtx/plugins/tf/lib/nvtx_ops.so"
+pip uninstall nvtx-plugins -y
+python setup.py install
 
 python examples/tf_session_example.py
 sleep 2
