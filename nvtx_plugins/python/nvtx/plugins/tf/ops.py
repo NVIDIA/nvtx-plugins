@@ -27,6 +27,10 @@ nvtx_tf_ops = load_library.load_op_library(
 @ops.RegisterGradient('NvtxStart')
 def _nvtx_start_grad(op, grad, marker_id, domain_handle):
     # grad_message and grad_domain_name are not used
+    if not isinstance(marker_id, tf.Tensor) and marker_id is None:
+        raise RuntimeError('Error in nvtx range %s. '
+                           'Make sure all nvtx ranges are closed' % op.name)
+
     grad, null_grad = nvtx_tf_ops.nvtx_end(inputs=grad,
         marker_id=marker_id, domain_handle=domain_handle,
         grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
