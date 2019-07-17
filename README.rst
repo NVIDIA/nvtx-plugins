@@ -54,20 +54,39 @@ Prerequisites
 - NVIDIA GPU + CUDA toolkit 10.0 or newer
 - TensorFlow 1.13 or newer
 
-Using a prebuilt package
-^^^^^^^^^^^^^^^^^^^^^^^^
-We have prebuilt packages available for NGC TensorFlow container: https://github.com/NVIDIA/nvtx-plugins/releases
-
-Compiling from source
-^^^^^^^^^^^^^^^^^^^^^
-Alternatively, you can use the package by compile directly from source with:
+Installing NVTX-Plugins
+^^^^^^^^^^^^^^^^^^^^^^^
+The package can be installed from PyPI:
 
 .. code-block:: bash
 
-    make pip_pkg
+    # Stable release
+    pip install nvtx-plugins
 
-A python wheel will be generated in `artifacts/` which can be installed using
-pip.
+    # Pre-release (may present bugs)
+    pip install nvtx-plugins --pre
+
+The package is also available for download on github: https://github.com/NVIDIA/nvtx-plugins/releases
+
+.. code-block:: bash
+
+    pip install nvtx-plugins*.tar.gz
+
+Installing from source
+^^^^^^^^^^^^^^^^^^^^^^
+
+You can build and install the package from source:
+
+.. code-block:: bash
+
+    python setup.py sdist
+    pip install dist/nvtx-plugins*.tar.gz
+
+For development objectives, you can install the package directly from source with:
+
+.. code-block:: bash
+
+    python setup.py install
 
 We recommend building the package inside NVIDIA's NGC TensorFlow container:
 https://ngc.nvidia.com/catalog/containers/nvidia:tensorflow
@@ -86,8 +105,9 @@ The documentation is built by running:
 
 .. code-block:: bash
 
-    pip install -r docs/requirements.txt
-    make docs_html
+    cd docs
+    pip install -r requirements.txt
+    make html
 
 The documentation files will be generated in `docs/build/html`
 

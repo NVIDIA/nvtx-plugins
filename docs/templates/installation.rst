@@ -1,27 +1,39 @@
 Installation
 ============
 
-NVTX for TF
------------
-
-Using a prebuilt package
-^^^^^^^^^^^^^^^^^^^^^^^^
-We have prebuilt packages available for NGC TensorFlow container: https://github.com/NVIDIA/nvtx-plugins/releases
-
-Compiling from source
-^^^^^^^^^^^^^^^^^^^^^
-Alternatively, you can use the package by compile directly from source with:
+Installing NVTX-Plugins
+^^^^^^^^^^^^^^^^^^^^^^^
+The package can be installed from PyPI:
 
 .. code-block:: bash
 
-    make pip_pkg
+    # Stable release
+    pip install nvtx-plugins
 
-A python wheel will be generated in `artifacts/` which can be installed using
-pip:
+    # Pre-release (may present bugs)
+    pip install nvtx-plugins --pre
+
+The package is also available for download on github: https://github.com/NVIDIA/nvtx-plugins/releases
 
 .. code-block:: bash
 
-    pip install artifacts/nvtx_plugins_tf-*.whl
+    pip install nvtx-plugins*.tar.gz
+
+Installing from source
+^^^^^^^^^^^^^^^^^^^^^^
+
+You can build and install the package from source:
+
+.. code-block:: bash
+
+    python setup.py sdist
+    pip install dist/nvtx-plugins*.tar.gz
+
+For development objectives, you can install the package directly from source with:
+
+.. code-block:: bash
+
+    python setup.py install
 
 We recommend building the package inside NVIDIA’s NGC TensorFlow container:
 https://ngc.nvidia.com/catalog/containers/nvidia:tensorflow
@@ -36,18 +48,18 @@ and `Running TensorFlow <https://docs.nvidia.com/deeplearning/dgx/tensorflow-rel
 
 Build the documentation
 ^^^^^^^^^^^^^^^^^^^^^^^
-The documentation are built by running:
+The documentation is built by running:
 
 .. code-block:: bash
 
-    pip install -r docs/requirements.txt
-    make docs_html
+    cd docs
+    pip install -r requirements.txt
+    make html
 
 The documentation files will be generated in `docs/build/html`
 
 Building the documentation does not require NVTX Plugins to be installed.
 Nonetheless, due to an issue in Sphinx **only Python 3.7 is supported** to build the documentation.
-
 
 
 Nsight Systems
