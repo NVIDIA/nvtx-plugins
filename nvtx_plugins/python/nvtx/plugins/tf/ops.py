@@ -78,11 +78,9 @@ def start(inputs, message, domain_name=None,
         name: An optional `string` name for the operation.
 
     Returns:
-        ``tuple`` containing:
-            -output: The inputs ``Tensor``.
-            -nvtx_context: ``list``, NVTX context associated with this op
-            and passed to :func:`ops.end <end>`. ``None`` 
-            if ``enabled=False``.
+        ``tuple``:
+        - output: The inputs ``Tensor``.
+        - nvtx_context: ``list``, NVTX context associated with this op and passed to :func:`ops.end <end>`. ``None``  if ``enabled=False``.
 
     """
     if not enabled:
@@ -131,7 +129,7 @@ def end(inputs, nvtx_context, name=None):
         name: An optional ``string`` name for the operation.
 
     Returns:
-        output: The inputs ``Tensor``.
+        The inputs ``Tensor``.
 
     """
     if nvtx_context is None:

@@ -52,9 +52,9 @@ class NVTXStart(Layer):
 
     Output shape:
         ``list`` of length 3:
-            output: The inputs ``Tensor``.
-            marker_id: ``int64 Tensor``, sent to :func:`NVTXEnd <NVTXEnd>`.
-            domain_handle: ``int64 Tensor``. sent to :func:`NVTXEnd <NVTXEnd>`.
+            - output: The inputs ``Tensor``.
+            - marker_id: ``int64 Tensor``, sent to :func:`NVTXEnd <NVTXEnd>`.
+            - domain_handle: ``int64 Tensor``. sent to :func:`NVTXEnd <NVTXEnd>`.
 
     """
 
@@ -109,9 +109,9 @@ class NVTXEnd(Layer):
 
     Input shape:
         ``list`` of length 3:
-            inputs: The input ``Tensor``.
-            marker_id: ``int64 Tensor`` from :func:`NVTXStart <NVTXStart>`.
-            domain_handle: ``int64 Tensor`` from :func:`NVTXStart <NVTXStart>`.
+            - inputs: The input ``Tensor``.
+            - marker_id: ``int64 Tensor`` from :func:`NVTXStart <NVTXStart>`.
+            - domain_handle: ``int64 Tensor`` from :func:`NVTXStart <NVTXStart>`.
 
     Output shape:
             A ``Tensor`` with ``inputs`` shape.
