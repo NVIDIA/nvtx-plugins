@@ -1,3 +1,4 @@
+# ! /usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
@@ -16,13 +17,17 @@
 
 import wrapt
 import tensorflow as tf
-from tensorflow.python.framework import load_library, ops
-from tensorflow.python.platform import resource_loader
+
+from tensorflow.python.framework import ops
+
+from nvtx.plugins.tf.ext_utils import load_library
+from nvtx.plugins.tf.ext_utils import get_ext_suffix
 
 __all__ = ['nvtx_tf_ops', 'start', 'end', 'trace']
 
-nvtx_tf_ops = load_library.load_op_library(
-    resource_loader.get_path_to_datafile('lib/nvtx_ops.so'))
+
+nvtx_tf_ops = load_library('lib/nvtx_ops' + get_ext_suffix())
+
 
 @ops.RegisterGradient('NvtxStart')
 def _nvtx_start_grad(op, grad, marker_id, domain_handle):

@@ -31,4 +31,6 @@ venv/
 # Misc
 nogit/
 
+**/*egg-info/
 update_authors.sh
+

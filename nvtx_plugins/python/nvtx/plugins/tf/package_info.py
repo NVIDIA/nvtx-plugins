@@ -1,3 +1,4 @@
+# ! /usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
@@ -25,7 +26,7 @@ VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
 __shortversion__ = '.'.join(map(str, VERSION[:3]))
 __version__ = '.'.join(map(str, VERSION[:3])) + ''.join(VERSION[3:])
 
-__package_name__ = 'nvtx-plugins-tf'
+__package_name__ = 'nvtx-plugins'
 __contact_names__ = 'Ahmad Kiswani, Roni Forte, Jonathan Dekhtiar, Yaki Tebeka'
 __contact_emails__ = 'akiswani@nvidia.com, rforte@nvidia.com, jdekhtiar@nvidia.com, ytebeka@nvidia.com'
 __homepage__ = 'https://github.com/NVIDIA/nvtx_plugins/'
