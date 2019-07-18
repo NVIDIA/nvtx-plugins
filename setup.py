@@ -51,7 +51,8 @@ tensorflow_nvtx_lib = Extension(
     sources=[
         'nvtx_plugins/cc/nvtx_ops.cc',
         'nvtx_plugins/cc/nvtx_kernels.cc',
-    ]
+    ],
+    undef_macros=["NDEBUG"]
 )
 
 setup(

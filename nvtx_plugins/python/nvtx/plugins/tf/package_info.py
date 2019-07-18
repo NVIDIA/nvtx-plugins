@@ -17,7 +17,7 @@
 
 MAJOR = 0
 MINOR = 1
-PATCH = 1
+PATCH = 2
 PRE_RELEASE = ''
 
 # Use the following formatting: (major, minor, patch, pre-release)
@@ -29,9 +29,9 @@ __version__ = '.'.join(map(str, VERSION[:3])) + ''.join(VERSION[3:])
 __package_name__ = 'nvtx-plugins'
 __contact_names__ = 'Ahmad Kiswani, Roni Forte, Jonathan Dekhtiar, Yaki Tebeka'
 __contact_emails__ = 'akiswani@nvidia.com, rforte@nvidia.com, jdekhtiar@nvidia.com, ytebeka@nvidia.com'
-__homepage__ = 'https://github.com/NVIDIA/nvtx_plugins/'
-__repository_url__ = 'https://github.com/NVIDIA/nvtx_plugins/'
-__download_url__ = 'https://github.com/NVIDIA/nvtx_plugins/'
+__homepage__ = 'https://github.com/NVIDIA/nvtx-plugins/'
+__repository_url__ = 'https://github.com/NVIDIA/nvtx-plugins/'
+__download_url__ = 'https://github.com/NVIDIA/nvtx-plugins/'
 __description__ = 'Python bindings for NVTX'
 __license__ = 'Apache2'
 __keywords__ = 'deep learning, machine learning, gpu, nvtx, nvidia, tensorflow, tf'

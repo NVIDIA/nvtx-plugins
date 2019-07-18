@@ -196,17 +196,10 @@ def get_cpp_flags(build_ext):
 
     avx_flags = ['-mf16c', '-mavx'] if check_avx_supported() else []
 
-    if sys.platform == 'darwin':
-        # Darwin most likely will have Clang, which has libc++.
-        flags_to_try = [default_flags + ['-stdlib=libc++'] + avx_flags,
-                        default_flags + avx_flags,
-                        default_flags + ['-stdlib=libc++'],
-                        default_flags]
-    else:
-        flags_to_try = [default_flags + avx_flags,
-                        default_flags + ['-stdlib=libc++'] + avx_flags,
-                        default_flags,
-                        default_flags + ['-stdlib=libc++']]
+    flags_to_try = [default_flags + avx_flags,
+                    default_flags + ['-stdlib=libc++'] + avx_flags,
+                    default_flags,
+                    default_flags + ['-stdlib=libc++']]
 
     for cpp_flags in flags_to_try:
         try:
@@ -235,12 +228,9 @@ def get_link_flags(build_ext):
     last_err = None
 
     libtool_flags = ['-Wl,-exported_symbols_list']
-    ld_flags = ['-Wl,--version-script=nvtx_plugins.lds']
+    ld_flags = []
 
-    if sys.platform == 'darwin':
-        flags_to_try = [libtool_flags, ld_flags]
-    else:
-        flags_to_try = [ld_flags, libtool_flags]
+    flags_to_try = [ld_flags, libtool_flags]
 
     for link_flags in flags_to_try:
 
