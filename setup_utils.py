@@ -61,6 +61,7 @@ __all__ = ["custom_build_ext"]
 have_cmake = True
 try:
     subprocess.check_output(['cmake', '--version'])
+
 except:
     have_cmake = False
 
@@ -71,14 +72,19 @@ def check_tf_version():
         if LooseVersion(tf.__version__) < LooseVersion('1.1.0'):
             raise DistutilsPlatformError(
                 'Your TensorFlow version %s is outdated.  '
-                'NVTX Plugins requires tensorflow>=1.1.0' % tf.__version__)
+                'NVTX Plugins requires tensorflow>=1.1.0' % tf.__version__
+            )
+
     except ImportError:
         raise DistutilsPlatformError(
-            'import tensorflow failed, is it installed?\n\n%s' % traceback.format_exc())
+            'import tensorflow failed, is it installed?\n\n%s' % traceback.format_exc()
+        )
+
     except AttributeError:
         # This means that tf.__version__ was not exposed, which makes it *REALLY* old.
         raise DistutilsPlatformError(
-            'Your TensorFlow version is outdated.  NVTX Plugins requires tensorflow>=1.1.0')
+            'Your TensorFlow version is outdated. NVTX Plugins requires tensorflow>=1.1.0'
+        )
 
 
 def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
@@ -97,16 +103,18 @@ def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
     if options:
         options['LIBRARY_DIRS'] += [lib_output_dir]
 
-    extdir = os.path.abspath(
-        os.path.dirname(build_ext.get_ext_fullpath(ext.name)))
-    config = 'Debug' if build_ext.debug else 'Release'
+    extdir = os.path.abspath(os.path.dirname(build_ext.get_ext_fullpath(ext.name)))
+
+    # config = 'Debug' if build_ext.debug else 'Release'
+    config = 'Release'
+
     cmake_args = [
-        '-DUSE_MPI=ON',
         '-DCMAKE_BUILD_TYPE=' + config,
         '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(config.upper(), extdir),
         '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(config.upper(),
                                                         lib_output_dir),
     ]
+
     cmake_build_args = [
         '--config', config,
         '--', '-j4',
@@ -114,15 +122,15 @@ def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
 
     # Keep temp build files within a unique subdirectory
     build_temp = os.path.abspath(os.path.join(build_ext.build_temp, ext.name))
+
     if not os.path.exists(build_temp):
         os.makedirs(build_temp)
 
     # Config and build the extension
     try:
-        subprocess.check_call([cmake_bin, ext.cmake_lists_dir] + cmake_args,
-                              cwd=build_temp)
-        subprocess.check_call([cmake_bin, '--build', '.'] + cmake_build_args,
-                              cwd=build_temp)
+        subprocess.check_call([cmake_bin, ext.cmake_lists_dir] + cmake_args, cwd=build_temp)
+        subprocess.check_call([cmake_bin, '--build', '.'] + cmake_build_args,cwd=build_temp)
+
     except OSError as e:
         raise RuntimeError('CMake failed: {}'.format(str(e)))
 
@@ -145,7 +153,7 @@ def find_matching_gcc_compiler_path(gxx_compiler_version):
             if compiler_version == gxx_compiler_version:
                 return compiler
 
-    print("=========================================================================")
+    print("===========================================================================================")
     print('INFO: Unable to find gcc compiler (version %s).' % gxx_compiler_version)
     print("===========================================================================================")
     return None
@@ -153,6 +161,7 @@ def find_matching_gcc_compiler_path(gxx_compiler_version):
 
 def remove_offensive_gcc_compiler_options(compiler_version):
     offensive_replacements = dict()
+
     if compiler_version < LooseVersion('4.9'):
         offensive_replacements = {
             '-Wdate-time': '',
@@ -161,6 +170,7 @@ def remove_offensive_gcc_compiler_options(compiler_version):
 
     if offensive_replacements:
         from sysconfig import get_config_var
+
         cflags = get_config_var('CONFIGURE_CFLAGS')
         cppflags = get_config_var('CONFIGURE_CPPFLAGS')
         ldshared = get_config_var('LDSHARED')
@@ -176,16 +186,16 @@ def remove_offensive_gcc_compiler_options(compiler_version):
     return None, None, None
 
 
-def check_avx_supported():
-    try:
-        flags_output = subprocess.check_output(
-            'gcc -march=native -E -v - </dev/null 2>&1 | grep cc1',
-            shell=True, universal_newlines=True).strip()
-        flags = shlex.split(flags_output)
-        return '+f16c' in flags and '+avx' in flags
-    except subprocess.CalledProcessError:
-        # Fallback to non-AVX if were not able to get flag information.
-        return False
+# def check_avx_supported():
+#     try:
+#         flags_output = subprocess.check_output(
+#             'gcc -march=native -E -v - </dev/null 2>&1 | grep cc1',
+#             shell=True, universal_newlines=True).strip()
+#         flags = shlex.split(flags_output)
+#         return '+f16c' in flags and '+avx' in flags
+#     except subprocess.CalledProcessError:
+#         # Fallback to non-AVX if were not able to get flag information.
+#         return False
 
 
 def get_cpp_flags(build_ext):
@@ -194,22 +204,31 @@ def get_cpp_flags(build_ext):
 
     default_flags = ['-std=c++11', '-fPIC', '-O2', '-Wall']
 
-    avx_flags = ['-mf16c', '-mavx'] if check_avx_supported() else []
+    # avx_flags = ['-mf16c', '-mavx'] if check_avx_supported() else []
+    avx_flags = []
 
-    flags_to_try = [default_flags + avx_flags,
-                    default_flags + ['-stdlib=libc++'] + avx_flags,
-                    default_flags,
-                    default_flags + ['-stdlib=libc++']]
+    flags_to_try = [
+        default_flags,
+        default_flags + ['-stdlib=libc++']
+    ]
+
+    if avx_flags:
+        flags_to_try.append(default_flags + avx_flags)
+        flags_to_try.append(default_flags + ['-stdlib=libc++'] + avx_flags)
 
     for cpp_flags in flags_to_try:
         try:
-            test_compile(build_ext, 'test_cpp_flags',
-                         extra_compile_preargs=cpp_flags,
-                         code=textwrap.dedent('''\
+            test_compile(
+                build_ext, 'test_cpp_flags',
+                extra_compile_preargs=cpp_flags,
+                code=textwrap.dedent(
+                    '''\
                     #include <unordered_map>
                     void test() {
                     }
-                    '''))
+                    '''
+                )
+            )
 
             return cpp_flags
 
@@ -259,16 +278,19 @@ def get_cuda_dirs(build_ext, cpp_flags):
     cuda_include_dirs = []
     cuda_lib_dirs = []
 
-    cuda_home = os.environ.get('NVTX_PLUGINS_CUDA_HOME')
+    cuda_home = os.environ.get('CUDA_HOME')
+
     if cuda_home:
         cuda_include_dirs += ['%s/include' % cuda_home]
         cuda_lib_dirs += ['%s/lib' % cuda_home, '%s/lib64' % cuda_home]
 
-    cuda_include = os.environ.get('NVTX_PLUGINS_CUDA_INCLUDE')
+    cuda_include = os.environ.get('CUDA_INCLUDE')
+
     if cuda_include:
         cuda_include_dirs += [cuda_include]
 
-    cuda_lib = os.environ.get('NVTX_PLUGINS_CUDA_LIB')
+    cuda_lib = os.environ.get('CUDA_LIB')
+
     if cuda_lib:
         cuda_lib_dirs += [cuda_lib]
 
@@ -278,26 +300,33 @@ def get_cuda_dirs(build_ext, cpp_flags):
         cuda_lib_dirs += ['/usr/local/cuda/lib', '/usr/local/cuda/lib64']
 
     try:
-        test_compile(build_ext, 'test_cuda', libraries=['cudart'],
-                     include_dirs=cuda_include_dirs,
-                     library_dirs=cuda_lib_dirs,
-                     extra_compile_preargs=cpp_flags,
-                     code=textwrap.dedent('''\
-            #include <cuda_runtime.h>
-            void test() {
-                cudaSetDevice(0);
-            }
-            '''))
+        test_compile(
+            build_ext,
+            'test_cuda',
+            libraries=['cudart'],
+            include_dirs=cuda_include_dirs,
+            library_dirs=cuda_lib_dirs,
+            extra_compile_preargs=cpp_flags,
+            code=textwrap.dedent(
+                '''\
+                #include <cuda_runtime.h>
+                void test() {
+                    cudaSetDevice(0);
+                }
+                '''
+            )
+        )
 
     except (CompileError, LinkError):
         raise DistutilsPlatformError(
             'CUDA library was not found (see error above).\n'
             'Please specify correct CUDA location with the NVTX_PLUGINS_CUDA_HOME '
             'environment variable or combination of NVTX_PLUGINS_CUDA_INCLUDE and '
-            'NVTX_PLUGINS_CUDA_LIB environment variables.\n\n'
-            'NVTX_PLUGINS_CUDA_HOME - path where CUDA include and lib directories can be found\n'
-            'NVTX_PLUGINS_CUDA_INCLUDE - path to CUDA include directory\n'
-            'NVTX_PLUGINS_CUDA_LIB - path to CUDA lib directory')
+            'CUDA_LIB environment variables.\n\n'
+            'CUDA_HOME - path where CUDA include and lib directories can be found\n'
+            'CUDA_INCLUDE - path to CUDA include directory\n'
+            'CUDA_LIB - path to CUDA lib directory'
+        )
 
     return cuda_include_dirs, cuda_lib_dirs
 
@@ -389,18 +418,18 @@ def build_tf_extension(build_ext, tf_lib, options):
 
     tf_compile_flags, tf_link_flags = get_tf_flags(build_ext, options['COMPILE_FLAGS'])
 
-    tf_lib.define_macros = options['MACROS']
-    tf_lib.include_dirs = options['INCLUDES']
+    tf_lib.define_macros = options['MACROS'] + tf_lib.define_macros
+    tf_lib.include_dirs = options['INCLUDES'] + tf_lib.include_dirs
 
     tf_lib.sources = options['SOURCES'] + tf_lib.sources
 
-    tf_lib.extra_compile_args = options['COMPILE_FLAGS'] + tf_compile_flags
-    tf_lib.extra_link_args = options['LINK_FLAGS'] + tf_link_flags
+    tf_lib.extra_compile_args = options['COMPILE_FLAGS'] + tf_compile_flags + tf_lib.extra_compile_args
+    tf_lib.extra_link_args = options['LINK_FLAGS'] + tf_link_flags + tf_lib.extra_link_args
 
-    tf_lib.library_dirs = options['LIBRARY_DIRS']
-    tf_lib.libraries = options['LIBRARIES']
+    tf_lib.library_dirs = options['LIBRARY_DIRS'] + tf_lib.library_dirs
+    tf_lib.libraries = options['LIBRARIES'] + tf_lib.libraries
 
-    cc_compiler = cxx_compiler = cflags = cppflags = None
+    cc_compiler = cxx_compiler = None
 
     if not sys.platform.startswith('linux'):
         raise EnvironmentError("Only Linux Systems are supported")
@@ -467,7 +496,22 @@ def build_tf_extension(build_ext, tf_lib, options):
                 customize_compiler(build_ext.compiler)
 
                 try:
+                    build_ext.compiler.compiler.remove("-DNDEBUG")
+                except (AttributeError, ValueError):
+                    pass
+                
+                try:
+                    build_ext.compiler.compiler_so.remove("-DNDEBUG")
+                except (AttributeError, ValueError):
+                    pass
+                
+                try:
                     build_ext.compiler.compiler_so.remove("-Wstrict-prototypes")
+                except (AttributeError, ValueError):
+                    pass
+                
+                try:
+                    build_ext.compiler.linker_so.remove("-Wl,-O1")
                 except (AttributeError, ValueError):
                     pass
 
@@ -606,7 +650,8 @@ def get_tf_abi(build_ext, include_dirs, lib_dirs, libs, cpp_flags):
                 void test() {
                     auto ignore = tensorflow::strings::StrCat("a", "b");
                 }
-                '''))
+                ''')
+            )
 
             from tensorflow.python.framework import load_library
             load_library.load_op_library(lib_file)
@@ -639,12 +684,14 @@ def get_tf_flags(build_ext, cpp_flags):
         compile_flags = []
         for include_dir in tf_include_dirs:
             compile_flags.append('-I%s' % include_dir)
+
         if tf_abi:
             compile_flags.append('-D%s=%s' % tf_abi)
 
         link_flags = []
         for lib_dir in tf_lib_dirs:
             link_flags.append('-L%s' % lib_dir)
+
         for lib in tf_libs:
             link_flags.append('-l%s' % lib)
 
@@ -691,6 +738,7 @@ def find_gxx_compiler_in_path():
             # g++, or g++-7, g++-4.9, or g++-4.8.5
             compiler = os.path.join(path_dir, bin_file)
             compiler_version = determine_gcc_version(compiler)
+
             if compiler_version:
                 compilers.append((compiler, compiler_version))
 
