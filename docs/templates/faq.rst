@@ -2,7 +2,7 @@ Frequently Asked Questions
 ==========================
 
 
-How is NVTX Plugins different from the built in markers in the NGC TesnorFlow container ?
+How is NVTX Plugins different from the built in markers in the NGC TensorFlow container ?
 -----------------------------------------------------------------------------------------
 
 The NVTX markers in the NGC TensorFlow container wrap a single graph node call
