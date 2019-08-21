@@ -15,8 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Setup for pip package.
-"""
+"""Setup for pip package."""
+
+import codecs
 import os
 import sys
 
@@ -29,15 +30,16 @@ sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx"
 sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx", "plugins")))  # Important
 sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx", "plugins", "tf")))  # Important
 
-from package_info import __version__
-from package_info import __package_name__
-from package_info import __contact_names__
 from package_info import __contact_emails__
-from package_info import __repository_url__
-from package_info import __download_url__
+from package_info import __contact_names__
 from package_info import __description__
-from package_info import __license__
+from package_info import __download_url__
+from package_info import __homepage__
 from package_info import __keywords__
+from package_info import __license__
+from package_info import __package_name__
+from package_info import __repository_url__
+from package_info import __version__
 
 from setup_utils import custom_build_ext
 
@@ -57,6 +59,23 @@ tensorflow_nvtx_lib = Extension(
     extra_link_args=['-lnvToolsExt']
 )
 
+# =================== Reading Readme file as TXT files ===================
+
+if os.path.exists('README.rst'):
+    # codec is used for consistent encoding
+    long_description = codecs.open(
+        os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.rst'),
+        'r', 'utf-8'
+    ).read()
+
+    long_description = long_description.replace(
+        "docs/images/",
+        "https://github.com/NVIDIA/nvtx-plugins/raw/master/docs/images/"
+    )
+
+else:
+    long_description = 'See ' + __homepage__
+
 setup(
     name=__package_name__,
 
@@ -65,6 +84,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=__version__,
     description=__description__,
+    long_description=long_description,
 
     # The project's main homepage.
     url=__repository_url__,

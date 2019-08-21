@@ -1,6 +1,22 @@
 Changelog
 =========
 
+Version 0.1.3
+-------------
+
+:Date: August 21, 2019
+
+- PyPI Description Added
+
+Version 0.1.2
+-------------
+
+:Date: July 18, 2019
+
+- URLs fix on PyPI
+- Simplification of setup process on the backend
+- No feature change
+
 Version 0.1.1
 -------------
 
