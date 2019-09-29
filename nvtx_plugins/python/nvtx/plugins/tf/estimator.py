@@ -20,7 +20,7 @@ from nvtx.plugins.tf.base_callbacks import BaseCallback
 
 
 class NVTXHook(BaseCallback, tf.train.SessionRunHook):
-    """Hook that adds NVTX markers to a TensorFlow session session.
+    """Hook that adds NVTX markers to a TensorFlow session.
     
     Arguments:
         skip_n_steps: ``int``, skips adding markers for the first N
