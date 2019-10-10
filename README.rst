@@ -8,7 +8,7 @@ NVTX Plugins for Deep Learning
 
 NVTX Plugins allows users to add their own NVIDIA Tools Extension (NVTX)
 events and time ranges to a TensorFlow graph. Applications which integrate NVTX can use NVIDIA
-Nsight Systems, Nsight Compute, and Visual Profiler to capture and visualize
+Nsight Systems and Nsight Compute to capture and visualize
 these events and time ranges.
 
 .. figure:: docs/images/nvtx_demo.jpg
@@ -157,8 +157,7 @@ session hooks, Keras layers and callbacks.
 Visualizing the ranges
 ^^^^^^^^^^^^^^^^^^^^^^
 NVTX requires a logger to register the generated events and ranges, we will use
-NVIDIA Nsight Systems to capture these events but other tools like
-NVIDIA Visual Profiler can be used instead.
+NVIDIA Nsight Systems to capture these event.
 
 Run your code with `nsys` (pre-installed in NVIDIA's NGC TensorFlow container) to
 generate a `qdrep` file:
