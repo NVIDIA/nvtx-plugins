@@ -137,7 +137,7 @@ setup(
         # Additional Setting
         'Environment :: Console',
         'Natural Language :: English',
-        'Operating System :: OS Independent',
+        'Operating System :: POSIX :: Linux',
     ],
 
     cmdclass={'build_ext': lambda dist: custom_build_ext(dist, tensorflow_nvtx_lib)},

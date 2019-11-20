@@ -54,16 +54,14 @@ from distutils.version import LooseVersion
 
 from setuptools.command.build_ext import build_ext
 
-
 __all__ = ["custom_build_ext"]
 
-
 # determining if the system has cmake installed
-have_cmake = True
 try:
     subprocess.check_output(['cmake', '--version'])
+    have_cmake = True
 
-except:
+except (FileNotFoundError, subprocess.CalledProcessError):
     have_cmake = False
 
 
@@ -89,7 +87,6 @@ def check_tf_version():
 
 
 def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
-
     cmake_bin = 'cmake'
 
     # All statically linked libraries will be placed here
@@ -130,7 +127,7 @@ def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
     # Config and build the extension
     try:
         subprocess.check_call([cmake_bin, ext.cmake_lists_dir] + cmake_args, cwd=build_temp)
-        subprocess.check_call([cmake_bin, '--build', '.'] + cmake_build_args,cwd=build_temp)
+        subprocess.check_call([cmake_bin, '--build', '.'] + cmake_build_args, cwd=build_temp)
 
     except OSError as e:
         raise RuntimeError('CMake failed: {}'.format(str(e)))
@@ -141,23 +138,6 @@ def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
 
     if options:
         options['LIBRARIES'] += [ext.name]
-
-
-def find_matching_gcc_compiler_path(gxx_compiler_version):
-
-    for path_dir, bin_file in enumerate_binaries_in_path():
-        if re.match('^gcc(?:-\\d+(?:\\.\\d+)*)?$', bin_file):
-            # gcc, or gcc-7, gcc-4.9, or gcc-4.8.5
-            compiler = os.path.join(path_dir, bin_file)
-            compiler_version = determine_gcc_version(compiler)
-
-            if compiler_version == gxx_compiler_version:
-                return compiler
-
-    print("===========================================================================================")
-    print('INFO: Unable to find gcc compiler (version %s).' % gxx_compiler_version)
-    print("===========================================================================================")
-    return None
 
 
 def remove_offensive_gcc_compiler_options(compiler_version):
@@ -200,7 +180,6 @@ def remove_offensive_gcc_compiler_options(compiler_version):
 
 
 def get_cpp_flags(build_ext):
-
     last_err = None
 
     default_flags = ['-std=c++11', '-fPIC', '-O2', '-Wall']
@@ -244,7 +223,6 @@ def get_cpp_flags(build_ext):
 
 
 def get_link_flags(build_ext):
-
     last_err = None
 
     libtool_flags = ['-Wl,-exported_symbols_list']
@@ -275,25 +253,27 @@ def get_link_flags(build_ext):
 
 
 def get_cuda_dirs(build_ext, cpp_flags):
-
     cuda_include_dirs = []
     cuda_lib_dirs = []
 
     cuda_home = os.environ.get('CUDA_HOME')
-
-    if cuda_home:
-        cuda_include_dirs += ['%s/include' % cuda_home]
-        cuda_lib_dirs += ['%s/lib' % cuda_home, '%s/lib64' % cuda_home]
-
+    cuda_lib = os.environ.get('CUDA_LIB')
     cuda_include = os.environ.get('CUDA_INCLUDE')
 
-    if cuda_include:
-        cuda_include_dirs += [cuda_include]
+    if cuda_home and os.path.exists(cuda_home):
+        for _dir in ['%s/include' % cuda_home]:
+            if os.path.exists(_dir):
+                cuda_include_dirs.append(_dir)
 
-    cuda_lib = os.environ.get('CUDA_LIB')
+        for _dir in ['%s/lib' % cuda_home, '%s/lib64' % cuda_home]:
+            if os.path.exists(_dir):
+                cuda_lib_dirs.append(_dir)
 
-    if cuda_lib:
-        cuda_lib_dirs += [cuda_lib]
+    if cuda_include and os.path.exists(cuda_include) and cuda_include not in cuda_include_dirs:
+        cuda_include_dirs.append(cuda_include)
+
+    if cuda_lib and os.path.exists(cuda_lib) and cuda_lib not in cuda_lib_dirs:
+        cuda_lib_dirs.append(cuda_lib)
 
     if not cuda_include_dirs and not cuda_lib_dirs:
         # default to /usr/local/cuda
@@ -321,8 +301,8 @@ def get_cuda_dirs(build_ext, cpp_flags):
     except (CompileError, LinkError):
         raise DistutilsPlatformError(
             'CUDA library was not found (see error above).\n'
-            'Please specify correct CUDA location with the NVTX_PLUGINS_CUDA_HOME '
-            'environment variable or combination of NVTX_PLUGINS_CUDA_INCLUDE and '
+            'Please specify correct CUDA location with the CUDA_HOME '
+            'environment variable or combination of CUDA_INCLUDE and '
             'CUDA_LIB environment variables.\n\n'
             'CUDA_HOME - path where CUDA include and lib directories can be found\n'
             'CUDA_INCLUDE - path to CUDA include directory\n'
@@ -333,12 +313,10 @@ def get_cuda_dirs(build_ext, cpp_flags):
 
 
 def get_common_options(build_ext):
-
     cpp_flags = get_cpp_flags(build_ext)
     link_flags = get_link_flags(build_ext)
 
     have_cuda = True
-    cuda_include_dirs, cuda_lib_dirs = get_cuda_dirs(build_ext, cpp_flags)
 
     MACROS = []
 
@@ -353,26 +331,33 @@ def get_common_options(build_ext):
     LIBRARIES = []
 
     if have_cuda:
+        cuda_include_dirs, cuda_lib_dirs = get_cuda_dirs(build_ext, cpp_flags)
         MACROS += [('HAVE_CUDA', '1')]
         INCLUDES += cuda_include_dirs
         LIBRARY_DIRS += cuda_lib_dirs
         LIBRARIES += ['cudart']
 
-    return dict(MACROS=MACROS,
-                INCLUDES=INCLUDES,
-                SOURCES=SOURCES,
-                COMPILE_FLAGS=COMPILE_FLAGS,
-                LINK_FLAGS=LINK_FLAGS,
-                LIBRARY_DIRS=LIBRARY_DIRS,
-                LIBRARIES=LIBRARIES)
+    return dict(
+        MACROS=MACROS,
+        INCLUDES=INCLUDES,
+        SOURCES=SOURCES,
+        COMPILE_FLAGS=COMPILE_FLAGS,
+        LINK_FLAGS=LINK_FLAGS,
+        LIBRARY_DIRS=LIBRARY_DIRS,
+        LIBRARIES=LIBRARIES
+    )
 
 
 # run the customize_compiler
 class custom_build_ext(build_ext):
 
-    def __init__(self, dist, tf_lib):
+    def __init__(self, dist, tf_libs):
 
-        self._tf_lib = tf_lib
+        if isinstance(tf_libs, (list, tuple)):
+            self._tf_libs = tf_libs
+        else:
+            self._tf_libs = [tf_libs]
+
         super(custom_build_ext, self).__init__(dist)
 
     def build_extensions(self):
@@ -381,34 +366,24 @@ class custom_build_ext(build_ext):
 
         built_plugins = []
 
-        try:
-            if not os.environ.get('NVTX_PLUGINS_WITHOUT_TENSORFLOW', False):
-                build_tf_extension(self, self._tf_lib, options)
+        for extension in self._tf_libs:
+
+            try:
+                build_tf_extension(self, extension, options)
                 built_plugins.append(True)
 
-            else:
+            except:
                 print("===========================================================================================")
                 print(
-                    'INFO: TensorFlow plugin building is skipped, remove the environment variable: `%s`.\n\n' %
-                    'NVTX_PLUGINS_WITHOUT_TENSORFLOW',
+                    'INFO: Unable to build TensorFlow plugin, will skip it.\n\n%s' % traceback.format_exc(),
                     file=sys.stderr
                 )
                 print("===========================================================================================")
 
                 built_plugins.append(False)
 
-        except:
-            print("===========================================================================================")
-            print(
-                'INFO: Unable to build TensorFlow plugin, will skip it.\n\n%s' % traceback.format_exc(),
-                file=sys.stderr
-            )
-            print("===========================================================================================")
-
-            built_plugins.append(False)
-
-        if not built_plugins:
-            raise DistutilsError('TensorFlow NVTX plugin was excluded from build. Aborting.')
+            if not built_plugins[-1]:
+                raise DistutilsError('TensorFlow plugin: `%s` failed to build. Aborting.' % extension.name)
 
         if not any(built_plugins):
             raise DistutilsError('No plugin was built. See errors above.')
@@ -461,7 +436,7 @@ def build_tf_extension(build_ext, tf_lib, options):
 
             if tf_compiler_version <= candidate_compiler_version < maximum_compiler_version:
 
-                candidate_cc_compiler = find_matching_gcc_compiler_path(candidate_compiler_version)
+                candidate_cc_compiler = find_matching_gcc_compiler_in_path(candidate_compiler_version)
 
                 if candidate_cc_compiler and candidate_compiler_version > compiler_version:
                     cc_compiler = candidate_cc_compiler
@@ -488,7 +463,8 @@ def build_tf_extension(build_ext, tf_lib, options):
             raise DistutilsPlatformError(
                 'Could not find compiler compatible with this TensorFlow installation.\n'
                 'Please check the NVTX-Plugins Github Repository for recommended compiler versions.\n'
-                'To force a specific compiler version, set CC and CXX environment variables.')
+                'To force a specific compiler version, set CC and CXX environment variables.'
+            )
 
         cflags, cppflags, ldshared = remove_offensive_gcc_compiler_options(compiler_version)
 
@@ -500,17 +476,17 @@ def build_tf_extension(build_ext, tf_lib, options):
                     build_ext.compiler.compiler.remove("-DNDEBUG")
                 except (AttributeError, ValueError):
                     pass
-                
+
                 try:
                     build_ext.compiler.compiler_so.remove("-DNDEBUG")
                 except (AttributeError, ValueError):
                     pass
-                
+
                 try:
                     build_ext.compiler.compiler_so.remove("-Wstrict-prototypes")
                 except (AttributeError, ValueError):
                     pass
-                
+
                 try:
                     build_ext.compiler.linker_so.remove("-Wl,-O1")
                 except (AttributeError, ValueError):
@@ -563,7 +539,6 @@ def get_tf_lib_dirs():
 
 def test_compile(build_ext, name, code, libraries=None, include_dirs=None, library_dirs=None, macros=None,
                  extra_compile_preargs=None, extra_link_preargs=None):
-
     test_compile_dir = os.path.join(build_ext.build_temp, 'test_compile')
 
     if not os.path.exists(test_compile_dir):
@@ -602,7 +577,6 @@ def test_compile(build_ext, name, code, libraries=None, include_dirs=None, libra
 
 
 def get_tf_libs(build_ext, lib_dirs, cpp_flags):
-
     for tf_libs in [['tensorflow_framework'], []]:
         try:
             lib_file = test_compile(
@@ -632,7 +606,6 @@ def get_tf_libs(build_ext, lib_dirs, cpp_flags):
 
 
 def get_tf_abi(build_ext, include_dirs, lib_dirs, libs, cpp_flags):
-
     cxx11_abi_macro = '_GLIBCXX_USE_CXX11_ABI'
 
     for cxx11_abi in ['0', '1']:
@@ -652,7 +625,7 @@ def get_tf_abi(build_ext, include_dirs, lib_dirs, libs, cpp_flags):
                     auto ignore = tensorflow::strings::StrCat("a", "b");
                 }
                 ''')
-            )
+                                    )
 
             from tensorflow.python.framework import load_library
             load_library.load_op_library(lib_file)
@@ -668,7 +641,6 @@ def get_tf_abi(build_ext, include_dirs, lib_dirs, libs, cpp_flags):
 
 
 def get_tf_flags(build_ext, cpp_flags):
-
     import tensorflow as tf
 
     try:
@@ -713,12 +685,34 @@ def determine_gcc_version(compiler):
                 return LooseVersion(version_match.group(1))
 
         print("===========================================================================================")
-        print('INFO: Unable to determine version of the compiler %s.' % compiler)
+        print('INFO: Unable to determine version of the gcc compiler %s.' % compiler)
         print("===========================================================================================")
 
     except subprocess.CalledProcessError:
         print("===========================================================================================")
-        print('INFO: Unable to determine version of the compiler %s.\n%s' % (compiler, traceback.format_exc()))
+        print('INFO: Unable to determine version of the gcc compiler %s.\n%s' % (compiler, traceback.format_exc()))
+        print("===========================================================================================")
+
+    return None
+
+
+def determine_nvcc_version(compiler):
+    try:
+        nvcc_macros = [
+            _l for _l in subprocess.check_output(
+                '%s --version </dev/null' % compiler,
+                shell=True,
+                universal_newlines=True
+            ).split('\n')
+            if _l != ''
+        ][-1]
+
+        nvcc_version = nvcc_macros.split(", ")[-1][1:]
+        return LooseVersion(nvcc_version)
+
+    except subprocess.CalledProcessError:
+        print("===========================================================================================")
+        print('INFO: Unable to determine version of the nvcc compiler %s.\n%s' % (compiler, traceback.format_exc()))
         print("===========================================================================================")
 
     return None
@@ -729,6 +723,22 @@ def enumerate_binaries_in_path():
         if os.path.isdir(path_dir):
             for bin_file in sorted(os.listdir(path_dir)):
                 yield path_dir, bin_file
+
+
+def find_matching_gcc_compiler_in_path(gxx_compiler_version):
+    for path_dir, bin_file in enumerate_binaries_in_path():
+        if re.match('^gcc(?:-\\d+(?:\\.\\d+)*)?$', bin_file):
+            # gcc, or gcc-7, gcc-4.9, or gcc-4.8.5
+            compiler = os.path.join(path_dir, bin_file)
+            compiler_version = determine_gcc_version(compiler)
+
+            if compiler_version == gxx_compiler_version:
+                return compiler
+
+    print("===========================================================================================")
+    print('INFO: Unable to find gcc compiler (version %s).' % gxx_compiler_version)
+    print("===========================================================================================")
+    return None
 
 
 def find_gxx_compiler_in_path():
@@ -743,4 +753,24 @@ def find_gxx_compiler_in_path():
             if compiler_version:
                 compilers.append((compiler, compiler_version))
 
+    if not compilers:
+        print("===========================================================================================")
+        print('INFO: Unable to find any gxx compiler.')
+        print("===========================================================================================")
+
     return compilers
+
+
+def find_nvcc_compiler_in_path():
+    for path_dir, bin_file in enumerate_binaries_in_path():
+
+        if bin_file == 'nvcc':
+            compiler = os.path.join(path_dir, bin_file)
+            compiler_version = determine_nvcc_version(compiler)
+
+            return compiler, compiler_version
+
+    else:
+        print("===========================================================================================")
+        print('INFO: Unable to find any nvcc compiler.')
+        print("===========================================================================================")
