@@ -2,6 +2,8 @@
 
 set -e  # make sure the script fails and stops at first exception
 
+export TF_CPP_MIN_LOG_LEVEL=3
+
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${BASEDIR}/../
 

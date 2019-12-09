@@ -17,8 +17,6 @@
 
 """NVTX Plugins"""
 
-import os
-
 from .package_info import __shortversion__
 from .package_info import __version__
 
@@ -32,8 +30,6 @@ from .package_info import __description__
 from .package_info import __license__
 from .package_info import __keywords__
 
-# Do not import during build of python package
-if all(envname not in os.environ for envname in ("MAKEFLAGS", "MAKELEVEL")):
-    import nvtx.plugins.tf.ops
-    import nvtx.plugins.tf.estimator
-    import nvtx.plugins.tf.keras
+import nvtx.plugins.tf.ops
+import nvtx.plugins.tf.estimator
+import nvtx.plugins.tf.keras

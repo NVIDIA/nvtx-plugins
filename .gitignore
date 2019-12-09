@@ -34,3 +34,5 @@ nogit/
 **/*egg-info/
 update_authors.sh
 
+
+upload_to_pypi.sh
