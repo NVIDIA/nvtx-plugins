@@ -17,6 +17,9 @@ eggs/
 .eggs/
 core
 
+# Misc
+nogit/
+
 # Python IDEs
 .idea/
 .vscode/
@@ -28,11 +31,4 @@ core
 # Virtual envs
 venv/
 
-# Misc
-nogit/
-
 **/*egg-info/
-update_authors.sh
-
-
-upload_to_pypi.sh
