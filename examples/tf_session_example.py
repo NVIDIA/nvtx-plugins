@@ -19,14 +19,8 @@ import tensorflow as tf
 import nvtx.plugins.tf as nvtx_tf
 from nvtx.plugins.tf.estimator import NVTXHook
 
-
 ENABLE_NVTX = True
 NUM_EPOCHS = 200
-
-dataset = np.loadtxt('examples/pima-indians-diabetes.data.csv', delimiter=',')
-features = dataset[:,0:8]
-labels = dataset[:,8]
-
 
 def batch_generator(features, labels, batch_size=128):
     dataset_len = len(labels)
@@ -39,11 +33,6 @@ def batch_generator(features, labels, batch_size=128):
         yield features_batch, label_batch
 
 
-# tf Graph Inputs
-features_plh = tf.placeholder('float', [None, 8])
-labels_plh = tf.placeholder('float', [None, 1])
-
-
 # Option 1: use decorators
 @nvtx_tf.ops.trace(message='Dense Block', domain_name='Forward',
                    grad_domain_name='Gradient', enabled=ENABLE_NVTX, trainable=True)
@@ -52,47 +41,58 @@ def DenseBinaryClassificationNet(inputs):
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 1',
         domain_name='Forward', grad_domain_name='Gradient',
         trainable=True, enabled=ENABLE_NVTX)
-    x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_1')
+    x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_1')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 2',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_2')
+    x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_2')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 3',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.layers.dense(x, 512, activation=tf.nn.relu, name='dense_3')
+    x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense_3')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 4',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.layers.dense(x, 512, activation=tf.nn.relu, name='dense_4')
+    x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense_4')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 5',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.layers.dense(x, 1, activation=None, name='dense_5')
+    x = tf.compat.v1.layers.dense(x, 1, activation=None, name='dense_5')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
     predictions = x
     return predictions
 
+tf.compat.v1.disable_eager_execution()
+
+# Load Dataset
+dataset = np.loadtxt('examples/pima-indians-diabetes.data.csv', delimiter=',')
+features = dataset[:,0:8]
+labels = dataset[:,8]
+
+# tf Graph Inputs
+features_plh = tf.compat.v1.placeholder('float', [None, 8])
+labels_plh = tf.compat.v1.placeholder('float', [None, 1])
+
 
 logits = DenseBinaryClassificationNet(inputs=features_plh)
 loss = tf.math.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels_plh))
-acc = tf.math.reduce_mean(tf.metrics.accuracy(labels=labels_plh, predictions=tf.round(tf.nn.sigmoid(logits))))
-optimizer = tf.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9, use_nesterov=True).minimize(loss)
+acc = tf.math.reduce_mean(tf.compat.v1.metrics.accuracy(labels=labels_plh, predictions=tf.round(tf.nn.sigmoid(logits))))
+optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9, use_nesterov=True).minimize(loss)
 
 
 # Initialize variables. local variables are needed to be initialized for tf.metrics.*
-init_g = tf.global_variables_initializer()
-init_l = tf.local_variables_initializer()
+init_g = tf.compat.v1.global_variables_initializer()
+init_l = tf.compat.v1.local_variables_initializer()
 
 nvtx_callback = NVTXHook(skip_n_steps=1, name='Train')
 
 # Start training
-with tf.train.MonitoredSession(hooks=[nvtx_callback]) as sess:
+with tf.compat.v1.train.MonitoredSession(hooks=[nvtx_callback]) as sess:
     sess.run([init_g, init_l])
 
     # Run graph
