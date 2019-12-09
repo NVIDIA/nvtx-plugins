@@ -19,7 +19,7 @@ import tensorflow as tf
 from nvtx.plugins.tf.base_callbacks import BaseCallback
 
 
-class NVTXHook(BaseCallback, tf.train.SessionRunHook):
+class NVTXHook(BaseCallback, tf.estimator.SessionRunHook):
     """Hook that adds NVTX markers to a TensorFlow session.
     
     Arguments:

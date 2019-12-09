@@ -101,11 +101,11 @@ def start(inputs, message, domain_name=None,
 
     null_input = 1.
     if trainable:
-        with tf.variable_scope("nvtx", reuse=tf.AUTO_REUSE):
-            null_input = tf.get_variable('null_input', shape=(),
-                                         dtype=tf.float32,
-                                         initializer=tf.zeros_initializer,
-                                         trainable=True)
+        with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
+            null_input = tf.compat.v1.get_variable('null_input', shape=(),
+                                                   dtype=tf.float32,
+                                                   initializer=tf.zeros_initializer,
+                                                   trainable=True)
 
     inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
         inputs=inputs, null_input=null_input,
