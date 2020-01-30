@@ -21,6 +21,8 @@ import codecs
 import os
 import sys
 
+import pkgutil
+
 from setuptools import setup
 from setuptools import Extension
 
@@ -43,10 +45,17 @@ from package_info import __version__
 
 from setup_utils import custom_build_ext
 
-REQUIRED_PACKAGES = [
-    'tensorflow-gpu',
-    'wrapt'
-]
+
+REQUIRED_PACKAGES = ['wrapt']
+
+for tf_package_name in ['tensorflow', 'tensorflow-gpu']:
+    tf_loader = pkgutil.find_loader(tf_package_name)
+    if tf_loader is not None:
+        REQUIRED_PACKAGES.append(tf_package_name)
+        break
+else:  # in case no available package is found, default to 'tensorflow'
+    REQUIRED_PACKAGES.append('tensorflow')
+
 
 tensorflow_nvtx_lib = Extension(
     'nvtx.plugins.tf.lib.nvtx_ops',
