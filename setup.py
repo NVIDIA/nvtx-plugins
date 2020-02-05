@@ -21,7 +21,7 @@ import codecs
 import os
 import sys
 
-import pkgutil
+import subprocess
 
 from setuptools import setup
 from setuptools import Extension
@@ -46,16 +46,21 @@ from package_info import __version__
 from setup_utils import custom_build_ext
 
 
-REQUIRED_PACKAGES = ['wrapt']
+def run_piped_subprocess(command):
+    ps = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return ps.communicate()[0].decode('utf-8').strip()
 
-for tf_package_name in ['tensorflow', 'tensorflow-gpu']:
-    tf_loader = pkgutil.find_loader(tf_package_name)
-    if tf_loader is not None:
-        REQUIRED_PACKAGES.append(tf_package_name)
-        break
-else:  # in case no available package is found, default to 'tensorflow'
-    REQUIRED_PACKAGES.append('tensorflow')
 
+def get_tf_pkgname():
+    cmd_rslt = run_piped_subprocess("pip freeze | grep tensorflow-gpu")
+
+    if "tensorflow-gpu" in cmd_rslt:
+        return "tensorflow-gpu"
+    else:
+        return "tensorflow"  # Default if not found
+
+
+REQUIRED_PACKAGES = ['wrapt', get_tf_pkgname()]
 
 tensorflow_nvtx_lib = Extension(
     'nvtx.plugins.tf.lib.nvtx_ops',
