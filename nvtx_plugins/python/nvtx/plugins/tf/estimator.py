@@ -33,7 +33,7 @@ class NVTXHook(BaseCallback, tf.estimator.SessionRunHook):
         self.name = name
         self.step_counter = 0
         self.skip_n_steps = skip_n_steps
-        self.iteration_message = 'step {iter}'
+        self.iteration_message = 'step{iter}'
 
     def begin(self):
         self.step_counter = 0
