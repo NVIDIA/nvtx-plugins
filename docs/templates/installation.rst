@@ -25,6 +25,7 @@ Installing from github
 You can build and install the package from the github repository:
 
 .. code-block:: bash
+
     # Install Master Branch
     pip install git+https://github.com/NVIDIA/nvtx-plugins
 
