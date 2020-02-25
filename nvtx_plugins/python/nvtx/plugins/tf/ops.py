@@ -28,6 +28,19 @@ __all__ = ['nvtx_tf_ops', 'start', 'end', 'trace']
 
 nvtx_tf_ops = load_library('lib/nvtx_ops' + get_ext_suffix())
 
+def _maybe_convert_list_to_tensor(inputs):
+
+    inputs_were_processed = False
+
+    if isinstance(inputs, (list, tuple)) and \
+        all([isinstance(x, tf.Tensor) for x in inputs]):
+        inputs = tf.stack(inputs, axis=0, name="nvtx_trace_inputs")
+        inputs_were_processed = True
+
+    assert isinstance(inputs, tf.Tensor)
+
+    return inputs, inputs_were_processed
+
 
 @ops.RegisterGradient('NvtxStart')
 def _nvtx_start_grad(op, grad, marker_id, domain_handle):
@@ -100,6 +113,7 @@ def start(inputs, message, domain_name=None,
     grad_domain_name = grad_domain_name or domain_name or ''
 
     null_input = 1.
+
     if trainable:
         with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
             null_input = tf.compat.v1.get_variable('null_input', shape=(),
@@ -107,9 +121,15 @@ def start(inputs, message, domain_name=None,
                                                    initializer=tf.zeros_initializer,
                                                    trainable=True)
 
+    inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
+
     inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
         inputs=inputs, null_input=null_input,
         message=message, domain_name=domain_name, name=name)
+
+    if should_unstack:
+        inputs = tf.unstack(inputs, axis=0)
+
     return inputs, (marker_id, domain_handle, grad_message, grad_domain_name)
 
 
@@ -145,9 +165,16 @@ def end(inputs, nvtx_context, name=None):
         return inputs
 
     marker_id, domain_handle, grad_message, grad_domain_name = nvtx_context
+
+    inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
+
     output, null_output = nvtx_tf_ops.nvtx_end(inputs=inputs,
         marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=grad_message, grad_domain_name=grad_domain_name, name=name)
+        grad_message=grad_message, grad_domain_name=grad_domain_name, name=name
+    )
+
+    if should_unstack:
+        output = tf.unstack(output, axis=0)
 
     return output
 
@@ -185,19 +212,29 @@ def trace(message, domain_name=None,
         except:
             raise ValueError("The input tensor must be the first argument"
                              " or named `inputs`")
-        assert isinstance(inputs, tf.Tensor)
+
+        inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
+
         start_name = '{}_start'.format(name) if name else None
         end_name = '{}_end'.format(name) if name else None
+
         inputs, nvtx_context = start(inputs=inputs,
             message=message, domain_name=domain_name,
             grad_message=grad_message, grad_domain_name=grad_domain_name,
-            enabled=enabled, trainable=trainable, name=start_name)
-        if "inputs" not in kwargs:
-            args = [inputs] + list(args[1:])
-        else:
+            enabled=enabled, trainable=trainable, name=start_name
+        )
+
+        if should_unstack:
+            inputs = tf.unstack(inputs, axis=0)
+
+        if "inputs" in kwargs:
             kwargs["inputs"] = inputs
+        else:
+            args = [inputs] + list(args[1:])
+            
         output = wrapped(*args, **kwargs)
         output = end(inputs=output, nvtx_context=nvtx_context, name=end_name)
+
         return output
 
     return func_wrapper
