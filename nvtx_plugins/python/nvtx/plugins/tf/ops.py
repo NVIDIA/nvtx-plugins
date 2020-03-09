@@ -34,7 +34,7 @@ def _maybe_process_inputs(inputs):
 
     if isinstance(inputs, (list, tuple)):
         raw_inputs = inputs
-        inputs = tf.zeros(shape=())
+        inputs = tf.zeros(shape=(), dtype=tf.float32)
 
     assert isinstance(inputs, tf.Tensor)
 
@@ -43,7 +43,8 @@ def _maybe_process_inputs(inputs):
 def _maybe_process_outputs(nvtx_out, raw_inputs):
 
     if raw_inputs is not None:
-        with tf.control_dependencies([nvtx_out]):
+        null_op = tf.debugging.assert_type(tensor=nvtx_out, tf_type=tf.float32)
+        with tf.control_dependencies([null_op]):
             inputs = [tf.identity(x) for x in raw_inputs]
     else:
         inputs = nvtx_out
