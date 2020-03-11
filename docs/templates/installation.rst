@@ -19,6 +19,25 @@ The package is also available for download on github: https://github.com/NVIDIA/
 
     pip install nvtx-plugins*.tar.gz
 
+Installing from github
+^^^^^^^^^^^^^^^^^^^^^^
+
+You can build and install the package from the github repository:
+
+.. code-block:: bash
+
+    # Install Master Branch
+    pip install git+https://github.com/NVIDIA/nvtx-plugins
+
+    # Install Specific Commit (In this case commit 7d46c3a)
+    pip install git+https://github.com/NVIDIA/nvtx-plugins@7d46c3a
+
+    # Install Specific Branch (In this case branch master)
+    pip install git+https://github.com/NVIDIA/nvtx-plugins@master
+
+    # Install Specific Release (In this case 0.1.7)
+    pip install git+https://github.com/NVIDIA/nvtx-plugins@0.1.7
+
 Installing from source
 ^^^^^^^^^^^^^^^^^^^^^^
 

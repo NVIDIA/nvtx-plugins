@@ -10,4 +10,4 @@ nsys profile \
   --stop-on-exit=true \
   --kill=sigkill \
   -o examples/tf_session_example \
-  python examples/tf_session_example.py
+  python examples/tf_session_multi_ins_outs_example.py

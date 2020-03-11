@@ -5,4 +5,4 @@ docker run -it --rm \
   --ipc='host' \
   -v "$(pwd):/workspace/nvtx" \
   --workdir /workspace/nvtx/ \
-  nvcr.io/nvidia/tensorflow:19.12-tf1-py3 /bin/bash
+  nvcr.io/nvidia/tensorflow:20.01-tf1-py3 /bin/bash
