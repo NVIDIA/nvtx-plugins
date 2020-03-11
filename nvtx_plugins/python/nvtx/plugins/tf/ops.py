@@ -48,16 +48,13 @@ def _nvtx_start_grad(op, grad, marker_id, domain_handle):
     if not isinstance(marker_id, tf.Tensor) and marker_id is None:
         raise RuntimeError('Error in nvtx range %s. '
                            'Make sure all nvtx ranges are closed' % op.name)
-    print("CALLING NvtxStart gradient=====================================")
     grad = nvtx_tf_ops.nvtx_end(inputs=grad,
         marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
+        grad_message=op.inputs[1], grad_domain_name=op.inputs[2])
     return [grad, None, None]
-
 
 @ops.RegisterGradient('NvtxEnd')
 def _nvtx_end_grad(op, grad):
-    print("CALLING NvtxEnd gradient=====================================")
     grad, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
         inputs=grad,
         message=op.inputs[3], domain_name=op.inputs[4])
@@ -112,17 +109,6 @@ def start(inputs, message, domain_name=None,
     grad_message = grad_message or message
     grad_domain_name = grad_domain_name or domain_name or ''
 
-    #null_input = 1.
-    #if trainable:
-    #    with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
-    #        null_input = tf.compat.v1.get_variable('null_input', shape=(),
-    #                                               dtype=tf.float32,
-    #                                               initializer=tf.zeros_initializer,
-    #                                               trainable=True)
-    #        inputs = inputs.append(null_input)
-
-    #inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
-
     input_is_list = True
     if not isinstance(inputs, (list, tuple)):
         input_is_list = False
@@ -176,7 +162,6 @@ def end(inputs, nvtx_context, name=None):
 
     """
 
-    print("NVTX end inputs:", inputs)
     if nvtx_context is None:
         return inputs
 

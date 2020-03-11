@@ -20,7 +20,6 @@ limitations under the License.
 #include "tensorflow/core/framework/register_types.h"
 
 #include "nvToolsExt.h"
-#include <iostream>
 
 #define NVTX_DEFAULT_DOMAIN nullptr
 
@@ -133,7 +132,6 @@ class NvtxStartOp : public OpKernel {
                   );
     output_marker_id->scalar<int64>()() = marker_id;
     output_domain_handle->scalar<int64>()() = (int64)domain_handle;
-    std::cout << "INSIDE kernel nvtx_start.........................." << std::endl;
   }
 
   bool IsExpensive() override { return false; }
@@ -166,13 +164,6 @@ class NvtxEndOp : public OpKernel {
       nvtxRangeEnd(marker_id);
     }
 
-    //Tensor *output_null_output = nullptr;
-    //OP_REQUIRES_OK(context,
-    //               context->allocate_output("null_output",
-    //                                        TensorShape({1}),
-    //                                        &output_null_output)
-    //              );
-    std::cout << "INSIDE kernel nvtx_end.........................." << std::endl;
   }
 
   bool IsExpensive() override { return false; }
@@ -198,23 +189,6 @@ class NvtxEndOp : public OpKernel {
                           NvtxEndOp<type>);
 
 
-//#define REGISTER_GPU_KERNEL                                 \
-//  REGISTER_KERNEL_BUILDER(Name("NvtxStart")                       \
-//                              .Device(DEVICE_GPU)                 \
-//                              .HostMemory("message")              \
-//                              .HostMemory("domain_name")          \
-//                              .HostMemory("marker_id")            \
-//                              .HostMemory("domain_handle"),        \
-//                          NvtxStartOp);                     \
-//  REGISTER_KERNEL_BUILDER(Name("NvtxEnd")                         \
-//                              .Device(DEVICE_GPU)                 \
-//                              .HostMemory("marker_id")            \
-//                              .HostMemory("domain_handle")        \
-//                              .HostMemory("grad_message")         \
-//                              .HostMemory("grad_domain_name"),     \
-//                          NvtxEndOp);
-
 TF_CALL_NUMBER_TYPES(REGISTER_GPU_KERNEL);
-//REGISTER_GPU_KERNEL
 
 #undef REGISTER_GPU_KERNEL
