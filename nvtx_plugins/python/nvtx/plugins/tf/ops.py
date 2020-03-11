@@ -48,20 +48,20 @@ def _nvtx_start_grad(op, grad, marker_id, domain_handle):
     if not isinstance(marker_id, tf.Tensor) and marker_id is None:
         raise RuntimeError('Error in nvtx range %s. '
                            'Make sure all nvtx ranges are closed' % op.name)
-
-    grad, null_grad = nvtx_tf_ops.nvtx_end(inputs=grad,
+    print("CALLING NvtxStart gradient=====================================")
+    grad = nvtx_tf_ops.nvtx_end(inputs=grad,
         marker_id=marker_id, domain_handle=domain_handle,
         grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
-    return [grad, null_grad, None, None]
+    return [grad, None, None]
 
 
 @ops.RegisterGradient('NvtxEnd')
-def _nvtx_end_grad(op, grad, null_grad):
+def _nvtx_end_grad(op, grad):
+    print("CALLING NvtxEnd gradient=====================================")
     grad, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
-        inputs=grad, null_input=1.,
+        inputs=grad,
         message=op.inputs[3], domain_name=op.inputs[4])
     return [grad, marker_id, domain_handle, None, None]
-
 
 def start(inputs, message, domain_name=None,
           grad_message=None, grad_domain_name=None,
@@ -112,26 +112,39 @@ def start(inputs, message, domain_name=None,
     grad_message = grad_message or message
     grad_domain_name = grad_domain_name or domain_name or ''
 
-    null_input = 1.
+    #null_input = 1.
+    #if trainable:
+    #    with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
+    #        null_input = tf.compat.v1.get_variable('null_input', shape=(),
+    #                                               dtype=tf.float32,
+    #                                               initializer=tf.zeros_initializer,
+    #                                               trainable=True)
+    #        inputs = inputs.append(null_input)
 
-    if trainable:
-        with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
-            null_input = tf.compat.v1.get_variable('null_input', shape=(),
-                                                   dtype=tf.float32,
-                                                   initializer=tf.zeros_initializer,
-                                                   trainable=True)
+    #inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
 
-    inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
+    input_is_list = True
+    if not isinstance(inputs, (list, tuple)):
+        input_is_list = False
+        inputs = [inputs]
 
-    inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
-        inputs=inputs, null_input=null_input,
-        message=message, domain_name=domain_name, name=name)
+    with tf.control_dependencies(inputs):
+        output_kernel, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+            inputs = inputs[0], message=message, domain_name=domain_name, name=name)
 
-    if should_unstack:
-        inputs = tf.unstack(inputs, axis=0)
+    with tf.control_dependencies([output_kernel, marker_id, domain_handle]):
+        if (len(inputs) == 1):
+            inputs = [output_kernel]
+        else:
+            inputs = [output_kernel] + [tf.identity(input_tensor) for input_tensor in inputs[1:]]
 
-    return inputs, (marker_id, domain_handle, grad_message, grad_domain_name)
+    #if should_unstack:
+    #    inputs = tf.unstack(inputs, axis=0)
 
+    if not input_is_list:
+        return inputs[0], (marker_id, domain_handle, grad_message, grad_domain_name)
+    else:
+        return inputs,(marker_id, domain_handle, grad_message, grad_domain_name)
 
 def end(inputs, nvtx_context, name=None):
     """An identity operation with a side effect of closing an NVTX marker.
@@ -160,23 +173,40 @@ def end(inputs, nvtx_context, name=None):
     Returns:
         The inputs ``Tensor``.
 
+
     """
+
+    print("NVTX end inputs:", inputs)
     if nvtx_context is None:
         return inputs
 
+    input_is_list = True
+    if not isinstance(inputs, (list, tuple)):
+        input_is_list = False
+        inputs = [inputs]
+
     marker_id, domain_handle, grad_message, grad_domain_name = nvtx_context
 
-    inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
+    #inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
 
-    output, null_output = nvtx_tf_ops.nvtx_end(inputs=inputs,
-        marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=grad_message, grad_domain_name=grad_domain_name, name=name
-    )
+    with tf.control_dependencies(inputs):
+        output_kernel = nvtx_tf_ops.nvtx_end(
+            marker_id=marker_id, domain_handle=domain_handle,
+            inputs = inputs[0], grad_message=grad_message, grad_domain_name=grad_domain_name, name=name
+        )
+    
+    with tf.control_dependencies([output_kernel]):
+        if (len(inputs) == 1):
+            inputs = [output_kernel]
+        else:
+            inputs = [output_kernel] + [tf.identity(input_tensor) for input_tensor in inputs[1:]]
+    #if should_unstack:
+    #    output = tf.unstack(output, axis=0)
 
-    if should_unstack:
-        output = tf.unstack(output, axis=0)
-
-    return output
+    if not input_is_list:
+        return inputs[0]
+    else:
+        return inputs
 
 
 def trace(message, domain_name=None,
