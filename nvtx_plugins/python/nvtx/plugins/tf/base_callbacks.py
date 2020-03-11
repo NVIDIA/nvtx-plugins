@@ -30,7 +30,7 @@ class BaseCallback(object):
     def open_marker(self, message):
         if self.marker_ids.get(message, None) is None:
             self.marker_ids[message] = []
-        marker = self.libnvtx.nvtxRangeStartW(message)
+        marker = self.libnvtx.nvtxRangeStartA(bytes(message, encoding="ascii"))
         self.marker_ids[message].append(marker)
 
     def close_marker(self, message):
