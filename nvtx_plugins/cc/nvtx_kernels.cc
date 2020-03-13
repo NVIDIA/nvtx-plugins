@@ -20,6 +20,9 @@ limitations under the License.
 #include "tensorflow/core/framework/register_types.h"
 
 #include "nvToolsExt.h"
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <iostream>
 
 #define NVTX_DEFAULT_DOMAIN nullptr
 
@@ -97,6 +100,7 @@ class NvtxStartOp : public OpKernel {
     const string message = message_t->flat<string>()(0);
     const string domain_name = domain_t->flat<string>()(0);
 
+    cudaDeviceSynchronize();
     // get domain handle (create one if necessary)
     nvtxDomainHandle_t domain_handle = NVTX_DEFAULT_DOMAIN;
     if (!domain_name.empty()) {
@@ -150,6 +154,7 @@ class NvtxEndOp : public OpKernel {
       context->set_output(0, context->input(0));
     }
 
+    cudaDeviceSynchronize();
     // Close NVTX range
     const Tensor *marker_t, *domain_t;
     OP_REQUIRES_OK(context, context->input("marker_id", &marker_t));

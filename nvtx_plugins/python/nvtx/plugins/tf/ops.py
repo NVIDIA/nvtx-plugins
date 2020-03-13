@@ -25,7 +25,6 @@ from nvtx.plugins.tf.ext_utils import get_ext_suffix
 
 __all__ = ['nvtx_tf_ops', 'start', 'end', 'trace']
 
-
 nvtx_tf_ops = load_library('lib/nvtx_ops' + get_ext_suffix())
 
 def _maybe_convert_list_to_tensor(inputs):
@@ -41,17 +40,20 @@ def _maybe_convert_list_to_tensor(inputs):
 
     return inputs, inputs_were_processed
 
-
 @ops.RegisterGradient('NvtxStart')
 def _nvtx_start_grad(op, grad, marker_id, domain_handle):
     # grad_message and grad_domain_name are not used
     if not isinstance(marker_id, tf.Tensor) and marker_id is None:
         raise RuntimeError('Error in nvtx range %s. '
                            'Make sure all nvtx ranges are closed' % op.name)
-
-    grad, null_output = nvtx_tf_ops.nvtx_end(inputs=grad,
-        marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
+    if (grad is None):
+        grad, null_output = nvtx_tf_ops.nvtx_end(op.inputs[0],
+            marker_id=marker_id, domain_handle=domain_handle,
+            grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
+    else:
+        grad, null_output = nvtx_tf_ops.nvtx_end(inputs=grad,
+            marker_id=marker_id, domain_handle=domain_handle,
+            grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
     return [grad, null_output, None, None]
 
 @ops.RegisterGradient('NvtxEnd')
@@ -105,6 +107,8 @@ def start(inputs, message, domain_name=None,
     """
     if not enabled:
         return inputs, None
+    
+    print("nvtx_start, message:", message)
 
     domain_name = domain_name or ''
     grad_message = grad_message or message
@@ -168,10 +172,12 @@ def end(inputs, nvtx_context, name=None):
 
     """
 
+
     if nvtx_context is None:
         return inputs
 
     marker_id, domain_handle, grad_message, grad_domain_name = nvtx_context
+    print("nvtx_end, message:", grad_message)
 
     if not isinstance(inputs, (list, tuple)):
         inputs, null_output = nvtx_tf_ops.nvtx_end(
