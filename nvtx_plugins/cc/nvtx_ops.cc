@@ -21,15 +21,17 @@ using namespace tensorflow;
 
 // TODO(ahmadki): marker_id and domain handle should be uint64, but int64
 // might cause op placement issues.
+
 REGISTER_OP("NvtxStart")
     .Input("inputs: T")
+    .Input("null_input: float32")
     .Input("message: string")
     .Input("domain_name: string")
     .Output("output: T")
     .Output("marker_id: int64")
-    .SetIsStateful()
     .Output("domain_handle: int64")
     .Attr("T: type")
+    .SetIsStateful()
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(0));
       auto* handle_data = c->input_handle_shapes_and_types(0);
@@ -60,15 +62,17 @@ REGISTER_OP("NvtxEnd")
     .Input("domain_handle: int64")
     .Input("grad_message: string")
     .Input("grad_domain_name: string")
-    .SetIsStateful()
     .Output("output: T")
+    .Output("null_output: float32")
     .Attr("T: type")
+    .SetIsStateful()
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(0));
       auto* handle_data = c->input_handle_shapes_and_types(0);
       if (handle_data != nullptr) {
         c->set_output_handle_shapes_and_types(0, *handle_data);
       }
+      c->set_output(1, c->Scalar());
       return Status::OK();
     })
     .Doc(R"doc(

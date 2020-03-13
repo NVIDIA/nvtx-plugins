@@ -164,6 +164,12 @@ class NvtxEndOp : public OpKernel {
       nvtxRangeEnd(marker_id);
     }
 
+    Tensor *output_null_output = nullptr;
+    OP_REQUIRES_OK(context,
+                   context->allocate_output("null_output",
+                                            TensorShape({}),
+                                            &output_null_output)
+                  );
   }
 
   bool IsExpensive() override { return false; }
