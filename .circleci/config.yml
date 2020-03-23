@@ -1,7 +1,7 @@
 version: 2.1
 
 build_py3_gpu_template: &build_py3_gpu_template
-  working_directory: ~/build
+  working_directory: /workspace
   docker:
     - image: docker:git
   steps:
@@ -12,13 +12,43 @@ build_py3_gpu_template: &build_py3_gpu_template
         exclusive: true
 
     - run:
-        name: "Building NVTX-Plugins Test Container - Base: $TENSORFLOW_CONTAINER_TAG"
+        name: "Building NVTX-Plugins Test Container"
+
         command: |
-          docker build -t "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" \
+          export CACHE_DIR="/workspace/build_cache/"
+          export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          mkdir -p ${CACHE_DIR}
+          docker build -t "nvtx_container" \
             --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
             --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
             --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
              - < .circleci/Dockerfile
+          docker save "nvtx_container" | gzip > "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+
+        persist_to_workspace:
+          root: /workspace/build_cache
+          paths: ${CONTAINER_SAVE_RELPATH}
+
+
+test_tensorflow_session_template: &test_tensorflow_session_template
+  working_directory: ~/build
+  docker:
+    - image: docker:git
+  steps:
+    - attach_workspace:
+        # Must be absolute path or relative path from working_directory
+        at: /workspace
+
+    - setup_remote_docker:
+        reusable: true
+        exclusive: true
+
+    - run:
+        name: TEST RUN - Tensorflow Session API
+        command: |
+          docker load -i /persistant_workspace/nvtx_container.tar
+          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" bash -c "python examples/tf_session_example.py"
+
 
 
 jobs:
