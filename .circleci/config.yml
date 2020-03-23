@@ -1,42 +1,68 @@
 version: 2.1
 
+build_py3_gpu_template: &build_py3_gpu_template
+  working_directory: ~/build
+  docker:
+    - image: docker:git
+  steps:
+    - checkout
+
+    - setup_remote_docker:
+        reusable: true
+        exclusive: true
+
+    - run:
+        name: "Building NVTX-Plugins Test Container - Base: ${TENSORFLOW_CONTAINER_TAG}"
+        command: |
+          docker build -t "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" \
+            --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
+            --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
+            --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
+             - < .circleci/Dockerfile
+
+
 jobs:
+  build_latest_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
+    <<: *build_py3_gpu_template
 
-  test_nightly_py3_gpu:
-    working_directory: ~/build
-    docker:
-      - image: docker:git
-    steps:
-      - checkout
+  build_nightly_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+    <<: *build_py3_gpu_template
 
-      - setup_remote_docker:
-          reusable: true
-          exclusive: true
-
-      - run:
-          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Nightly GPU
-          command: |
-            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" - < .circleci/Dockerfile
-            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
-            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
-
-  test_latest_py3_gpu:
-    working_directory: ~/build
-    docker:
-      - image: docker:git
-    steps:
-      - checkout
-
-      - setup_remote_docker:
-          reusable: true
-          exclusive: true
-
-      - run:
-          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest GPU
-          command: |
-            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" - < .circleci/Dockerfile
-            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
-            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
+  # test_tensorflow_session:
+  #   working_directory: ~/build
+  #   docker:
+  #     - image: docker:git
+  #   steps:
+  #     - checkout
+  #
+  #     - setup_remote_docker:
+  #         reusable: true
+  #         exclusive: true
+  #
+  #     - run:
+  #         name: TEST RUN - Tensorflow Session API
+  #         command: |
+  #           docker run --rm --workdir /dist/nvtx-plugins "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" bash -c "python examples/tf_session_example.py"
+  #
+  # test_keras:
+  #   working_directory: ~/build
+  #   docker:
+  #     - image: docker:git
+  #   steps:
+  #     - checkout
+  #
+  #     - setup_remote_docker:
+  #         reusable: true
+  #         exclusive: true
+  #
+  #     - run:
+  #         name: TEST RUN - Keras API
+  #         command: |
+  #           docker run --rm --workdir /dist/nvtx-plugins "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" bash -c "python examples/keras_example.py"
 
 ###################################################################################
 #                               CircleCI WORKFLOWS                                #
@@ -44,21 +70,21 @@ jobs:
 
 workflows:
   version: 2
-  build-and-deploy:
+  build-and-test:
     jobs:
 
       ###################################################################################
       #  TEST BUILDS with TensorLayer installed from Source - NOT PUSHED TO DOCKER HUB  #
       ###################################################################################
 
-      - test_nightly_py3_gpu:
+      - build_latest_py3_gpu:
           filters:
             tags:
               ignore: /.*/
             # branches:
             #   ignore: master
 
-      - test_latest_py3_gpu:
+      - build_nightly_py3_gpu:
           filters:
             tags:
               ignore: /.*/

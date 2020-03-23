@@ -43,7 +43,7 @@ ARG PIP_VERSION
 RUN printf "\nContainer Tag: ${TF_CONTAINER_VERSION}\n\n" \
     && apt-get update \
     && apt-get install -y git \
-    && mkdir /dist/ && cd /dist/ \
+    && mkdir -p /dist/ && cd /dist/ \
     && if [[ ! -z "$GIT_REPOSITORY_URL" ]]; then \
         GIT_REPOSITORY_URL="${GIT_REPOSITORY_URL/git@github.com:/https://github.com/}" \
         && printf "\nGit Repository URL: ${GIT_REPOSITORY_URL}\n"; \
@@ -68,6 +68,8 @@ RUN printf "\nContainer Tag: ${TF_CONTAINER_VERSION}\n\n" \
           -e .; \
     elif [[ ! -z "$PIP_VERSION" ]]; then \
         printf "\nBuilding Tag Release: ${PIP_VERSION}\n\n" \
+        && git clone https://github.com/NVIDIA/nvtx-plugins.git \
+        && cd nvtx-plugins && git checkout "tags/${GIT_TAG}" \
         && pip install \
           --disable-pip-version-check \
           --no-cache-dir \
@@ -75,6 +77,9 @@ RUN printf "\nContainer Tag: ${TF_CONTAINER_VERSION}\n\n" \
           nvtx-plugins=="${PIP_VERSION}"; \
     else \
         printf "\nBuilding Latest Released Package\n\n" \
+        && git clone https://github.com/NVIDIA/nvtx-plugins.git \
+        && cd nvtx-plugins && git fetch --tags \
+        && git checkout "tags/$(git describe --tags `git rev-list --tags --max-count=1`)" \
         && pip install \
           --disable-pip-version-check \
           --no-cache-dir \
