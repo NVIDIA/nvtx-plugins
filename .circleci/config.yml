@@ -38,25 +38,6 @@ jobs:
             docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
             docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
 
-  test_latest_devel_py3_gpu:
-    working_directory: ~/build
-    docker:
-      - image: docker:git
-    steps:
-      - checkout
-
-      - setup_remote_docker:
-          reusable: true
-          exclusive: true
-
-      - run:
-          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest Devel GPU
-          command: |
-            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-devel-gpu-py3" - < .circleci/Dockerfile
-            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
-            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
-
-
 ###################################################################################
 #                               CircleCI WORKFLOWS                                #
 ###################################################################################
@@ -78,13 +59,6 @@ workflows:
             #   ignore: master
 
       - test_latest_py3_gpu:
-          filters:
-            tags:
-              ignore: /.*/
-            # branches:
-            #   ignore: master
-
-      - test_latest_devel_py3_gpu:
           filters:
             tags:
               ignore: /.*/
