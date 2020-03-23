@@ -17,7 +17,7 @@ build_py3_gpu_template: &build_py3_gpu_template
         command: |
           export CACHE_DIR="/workspace/build_cache"
           export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
-          mkdir -p ${CACHE_DIR}
+          mkdir -p "${CACHE_DIR}/${TENSORFLOW_CONTAINER_TAG}"
           docker build -t "nvtx_container" \
             --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
             --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
