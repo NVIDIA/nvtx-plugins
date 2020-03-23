@@ -16,8 +16,42 @@ jobs:
       - run:
           name: TEST BUILD - Build Docker Image Python 3 Tensorflow Nightly GPU
           command: |
-            cd docker
-            docker build -t nightly_py3_gpu . --build-arg TF_CONTAINER_VERSION="latest"
+            cd .circleci/
+            docker build -t nightly_py3_gpu . --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3"
+
+  test_latest_py3_gpu:
+    working_directory: ~/build
+    docker:
+      - image: docker:git
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest GPU
+          command: |
+            cd .circleci/
+            docker build -t latest_py3_gpu . --build-arg TF_CONTAINER_VERSION="latest-gpu-py3"
+            
+  test_latest_devel_py3_gpu:
+    working_directory: ~/build
+    docker:
+      - image: docker:git
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest Devel GPU
+          command: |
+            cd .circleci/
+            docker build -t latest_devel_py3_gpu . --build-arg TF_CONTAINER_VERSION="latest-devel-gpu-py3"
 
 
 ###################################################################################
@@ -38,7 +72,21 @@ workflows:
             tags:
               ignore: /.*/
             branches:
-              ignore: master            
+              ignore: master          
+
+      - test_latest_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              ignore: master  
+
+      - test_latest_devel_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              ignore: master    
 
       # - test_nightly_py3_gpu:
       #     filters:
