@@ -16,7 +16,7 @@ jobs:
       - run:
           name: TEST BUILD - Build Docker Image Python 3 Tensorflow Nightly GPU
           command: |
-            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" - < .circleci/Dockerfile
+            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" - < .circleci/Dockerfile
             docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
             docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
 
@@ -34,7 +34,7 @@ jobs:
       - run:
           name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest GPU
           command: |
-            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" - < .circleci/Dockerfile
+            docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" - < .circleci/Dockerfile
             docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
             docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
 

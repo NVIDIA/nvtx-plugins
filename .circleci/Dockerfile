@@ -6,9 +6,19 @@
 
 # Test Commands:
 #
+# =============== LATEST STABLE CONTAINER  =============== #
+#
 # docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" - < .circleci/Dockerfile
 # docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" --build-arg PIP_VERSION="0.1.7" - < .circleci/Dockerfile
 # docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" --build-arg GIT_REPOSITORY_URL="git@github.com:NVIDIA/nvtx-plugins.git" --build-arg GIT_TAG="0.1.7" - < .circleci/Dockerfile
+# docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" --build-arg GIT_REPOSITORY_URL="git@github.com:NVIDIA/nvtx-plugins.git" --build-arg GIT_COMMIT_SHA1="f24a12cea34bf1dac398fac7bed7af0e1b239c73" - < .circleci/Dockerfile
+#
+# =============== NIGHTLY BUILT CONTAINER  =============== #
+#
+# docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" - < .circleci/Dockerfile
+# docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" --build-arg PIP_VERSION="0.1.7" - < .circleci/Dockerfile
+# docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" --build-arg GIT_REPOSITORY_URL="git@github.com:NVIDIA/nvtx-plugins.git" --build-arg GIT_TAG="0.1.7" - < .circleci/Dockerfile
+# docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" --build-arg GIT_REPOSITORY_URL="git@github.com:NVIDIA/nvtx-plugins.git" --build-arg GIT_COMMIT_SHA1="f24a12cea34bf1dac398fac7bed7af0e1b239c73" - < .circleci/Dockerfile
 
 ARG TF_CONTAINER_VERSION
 
