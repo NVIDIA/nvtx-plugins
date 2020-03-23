@@ -23,14 +23,16 @@ build_py3_gpu_template: &build_py3_gpu_template
             --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
             --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
              - < .circleci/Dockerfile
+          printf "\nSaving  docker image to disk... Please wait\n\n"
           docker save "nvtx_container" | gzip > "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+          printf "\nSaving  docker image to persistant workspace ... Please wait\n\n"
 
         persist_to_workspace:
           root: /workspace/build_cache
           paths: ${CONTAINER_SAVE_RELPATH}
 
 
-test_tensorflow_session_template: &test_tensorflow_session_template
+test_example_template: &test_example_template
   working_directory: ~/build
   docker:
     - image: docker:git
@@ -48,30 +50,11 @@ test_tensorflow_session_template: &test_tensorflow_session_template
         command: |
           export CACHE_DIR="/workspace/build_cache"
           export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          printf "\nLoading previously built docker image... Please wait\n\n"
           docker load -i "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
-          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/tf_session_example.py"
-
-
-test_keras_template: &test_keras_template
-  working_directory: ~/build
-  docker:
-    - image: docker:git
-  steps:
-    - attach_workspace:
-        # Must be absolute path or relative path from working_directory
-        at: /workspace/build_cache
-
-    - setup_remote_docker:
-        reusable: true
-        exclusive: true
-
-    - run:
-        name: TEST RUN - Tensorflow Session API
-        command: |
-          export CACHE_DIR="/workspace/build_cache"
-          export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
-          docker load -i "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
-          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/keras_example.py"
+          printf "\nRunning Unittest ... Please Wait\n\n"
+          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/${PYTHON_EXAMPLE_FILE}"
+          printf "\nFinished with Success !\n\n"
 
 
 jobs:
@@ -97,12 +80,14 @@ jobs:
   test_tensorflow_session_latest_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
-    <<: *test_tensorflow_session_template
+      PYTHON_EXAMPLE_FILE: "tf_session_example.py"
+    <<: *test_example_template
 
   test_tensorflow_session_nightly_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
-    <<: *test_tensorflow_session_template
+      PYTHON_EXAMPLE_FILE: "tf_session_example.py"
+    <<: *test_example_template
 
   # =================================================== #
   #                Running Keras API Test               #
@@ -111,12 +96,14 @@ jobs:
   test_keras_latest_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
-    <<: *test_keras_template
+      PYTHON_EXAMPLE_FILE: "keras_example.py"
+    <<: *test_example_template
 
   test_keras_nightly_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
-    <<: *test_keras_template
+      PYTHON_EXAMPLE_FILE: "keras_example.py"
+    <<: *test_example_template
 
 ###################################################################################
 #                               CircleCI WORKFLOWS                                #
