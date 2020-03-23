@@ -1,0 +1,96 @@
+version: 2.1
+
+jobs:
+
+  test_nightly_py3_gpu:
+    working_directory: ~/build
+    docker:
+      - image: docker:git
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Nightly GPU
+          command: |
+            cd .circleci/
+            docker build -t nightly_py3_gpu . --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3"
+
+  test_latest_py3_gpu:
+    working_directory: ~/build
+    docker:
+      - image: docker:git
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest GPU
+          command: |
+            cd .circleci/
+            docker build -t latest_py3_gpu . --build-arg TF_CONTAINER_VERSION="latest-gpu-py3"
+
+  test_latest_devel_py3_gpu:
+    working_directory: ~/build
+    docker:
+      - image: docker:git
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest Devel GPU
+          command: |
+            cd .circleci/
+            docker build -t latest_devel_py3_gpu . --build-arg TF_CONTAINER_VERSION="latest-devel-gpu-py3"
+
+
+###################################################################################
+#                               CircleCI WORKFLOWS                                #
+###################################################################################
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+
+      ###################################################################################
+      #  TEST BUILDS with TensorLayer installed from Source - NOT PUSHED TO DOCKER HUB  #
+      ###################################################################################
+
+      - test_nightly_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+            # branches:
+            #   ignore: master
+
+      - test_latest_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+            # branches:
+            #   ignore: master
+
+      - test_latest_devel_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+            # branches:
+            #   ignore: master    
+
+      # - test_nightly_py3_gpu:
+      #     filters:
+      #       tags:
+      #         only: /\d+\.\d+(\.\d+)?(\S*)?$/
+      #       branches:
+      #         ignore: /.*/
