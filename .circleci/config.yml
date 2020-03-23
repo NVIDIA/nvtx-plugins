@@ -1,15 +1,19 @@
 version: 2.1
 
 build_py3_gpu_template: &build_py3_gpu_template
+
   working_directory: /workspace
+
   docker:
     - image: docker:git
+
   steps:
-    - checkout
 
     - setup_remote_docker:
         reusable: true
         exclusive: true
+
+    - checkout
 
     - run:
         name: "Building NVTX-Plugins Test Container"
@@ -25,25 +29,29 @@ build_py3_gpu_template: &build_py3_gpu_template
              - < .circleci/Dockerfile
           printf "\nSaving  docker image to disk... Please wait\n\n"
           docker save "nvtx_container" | gzip > "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
-          printf "\nSaving  docker image to persistant workspace ... Please wait\n\n"
+          printf "\nFinished with Success !\n\n"
 
-        persist_to_workspace:
-          root: /workspace/build_cache
-          paths: ${CONTAINER_SAVE_RELPATH}
+    - persist_to_workspace:
+      root: /workspace/build_cache
+      paths: ${CONTAINER_SAVE_RELPATH}
 
 
 test_example_template: &test_example_template
+
   working_directory: ~/build
+
   docker:
     - image: docker:git
+
   steps:
+
+    - setup_remote_docker:
+      reusable: true
+      exclusive: true
+
     - attach_workspace:
         # Must be absolute path or relative path from working_directory
         at: /workspace/build_cache
-
-    - setup_remote_docker:
-        reusable: true
-        exclusive: true
 
     - run:
         name: TEST RUN - Tensorflow Session API
