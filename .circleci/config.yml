@@ -17,6 +17,8 @@ jobs:
           name: TEST BUILD - Build Docker Image Python 3 Tensorflow Nightly GPU
           command: |
             docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="nightly-gpu-py3" - < .circleci/Dockerfile
+            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
+            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
 
   test_latest_py3_gpu:
     working_directory: ~/build
@@ -33,6 +35,8 @@ jobs:
           name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest GPU
           command: |
             docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-gpu-py3" - < .circleci/Dockerfile
+            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
+            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
 
   test_latest_devel_py3_gpu:
     working_directory: ~/build
@@ -49,6 +53,8 @@ jobs:
           name: TEST BUILD - Build Docker Image Python 3 Tensorflow Latest Devel GPU
           command: |
             docker build -t nvtx_container --build-arg TF_CONTAINER_VERSION="latest-devel-gpu-py3" - < .circleci/Dockerfile
+            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/keras_example.py"
+            docker run --rm -v "$(pwd):/workspace" --workdir /workspace nvtx_container bash -c "python examples/tf_session_example.py"
 
 
 ###################################################################################
@@ -83,7 +89,7 @@ workflows:
             tags:
               ignore: /.*/
             # branches:
-            #   ignore: master    
+            #   ignore: master
 
       # - test_nightly_py3_gpu:
       #     filters:

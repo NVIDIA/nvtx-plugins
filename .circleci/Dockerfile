@@ -14,7 +14,6 @@ ARG PIP_VERSION
 ARG TF_CONTAINER_VERSION
 
 RUN echo "Container Tag: ${TF_CONTAINER_VERSION}" \
-    && apt-get update \
     && if [ -z "$PIP_VERSION" ]; then \
         echo "Building a Nightly Release" \
         && apt-get install -y git \
