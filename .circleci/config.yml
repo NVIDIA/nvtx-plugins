@@ -12,7 +12,7 @@ build_py3_gpu_template: &build_py3_gpu_template
         exclusive: true
 
     - run:
-        name: "Building NVTX-Plugins Test Container - Base: ${TENSORFLOW_CONTAINER_TAG}"
+        name: "Building NVTX-Plugins Test Container - Base: $TENSORFLOW_CONTAINER_TAG"
         command: |
           docker build -t "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" \
             --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
