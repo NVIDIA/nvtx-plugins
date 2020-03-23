@@ -15,7 +15,7 @@ build_py3_gpu_template: &build_py3_gpu_template
         name: "Building NVTX-Plugins Test Container"
 
         command: |
-          export CACHE_DIR="/workspace/build_cache/"
+          export CACHE_DIR="/workspace/build_cache"
           export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
           mkdir -p ${CACHE_DIR}
           docker build -t "nvtx_container" \
@@ -37,7 +37,7 @@ test_tensorflow_session_template: &test_tensorflow_session_template
   steps:
     - attach_workspace:
         # Must be absolute path or relative path from working_directory
-        at: /workspace
+        at: /workspace/build_cache
 
     - setup_remote_docker:
         reusable: true
@@ -46,12 +46,40 @@ test_tensorflow_session_template: &test_tensorflow_session_template
     - run:
         name: TEST RUN - Tensorflow Session API
         command: |
-          docker load -i /persistant_workspace/nvtx_container.tar
-          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" bash -c "python examples/tf_session_example.py"
+          export CACHE_DIR="/workspace/build_cache"
+          export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          docker load -i "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/tf_session_example.py"
 
+
+test_keras_template: &test_keras_template
+  working_directory: ~/build
+  docker:
+    - image: docker:git
+  steps:
+    - attach_workspace:
+        # Must be absolute path or relative path from working_directory
+        at: /workspace/build_cache
+
+    - setup_remote_docker:
+        reusable: true
+        exclusive: true
+
+    - run:
+        name: TEST RUN - Tensorflow Session API
+        command: |
+          export CACHE_DIR="/workspace/build_cache"
+          export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          docker load -i "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/keras_example.py"
 
 
 jobs:
+
+  # =================================================== #
+  #             Building Base Images for Test           #
+  # =================================================== #
+
   build_latest_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
@@ -62,37 +90,33 @@ jobs:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
     <<: *build_py3_gpu_template
 
-  # test_tensorflow_session:
-  #   working_directory: ~/build
-  #   docker:
-  #     - image: docker:git
-  #   steps:
-  #     - checkout
-  #
-  #     - setup_remote_docker:
-  #         reusable: true
-  #         exclusive: true
-  #
-  #     - run:
-  #         name: TEST RUN - Tensorflow Session API
-  #         command: |
-  #           docker run --rm --workdir /dist/nvtx-plugins "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" bash -c "python examples/tf_session_example.py"
-  #
-  # test_keras:
-  #   working_directory: ~/build
-  #   docker:
-  #     - image: docker:git
-  #   steps:
-  #     - checkout
-  #
-  #     - setup_remote_docker:
-  #         reusable: true
-  #         exclusive: true
-  #
-  #     - run:
-  #         name: TEST RUN - Keras API
-  #         command: |
-  #           docker run --rm --workdir /dist/nvtx-plugins "nvtx_container:${CIRCLE_WORKFLOW_JOB_ID}" bash -c "python examples/keras_example.py"
+  # =================================================== #
+  #            Running Tensorflow Session Test          #
+  # =================================================== #
+
+  test_tensorflow_session_latest_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
+    <<: *test_tensorflow_session_template
+
+  test_tensorflow_session_nightly_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+    <<: *test_tensorflow_session_template
+
+  # =================================================== #
+  #                Running Keras API Test               #
+  # =================================================== #
+
+  test_keras_latest_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
+    <<: *test_keras_template
+
+  test_keras_nightly_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+    <<: *test_keras_template
 
 ###################################################################################
 #                               CircleCI WORKFLOWS                                #
@@ -103,9 +127,9 @@ workflows:
   build-and-test:
     jobs:
 
-      ###################################################################################
-      #  TEST BUILDS with TensorLayer installed from Source - NOT PUSHED TO DOCKER HUB  #
-      ###################################################################################
+      ############################################################
+      #           Jobs for Tensorflow Latest Container           #
+      ############################################################
 
       - build_latest_py3_gpu:
           filters:
@@ -114,12 +138,32 @@ workflows:
             # branches:
             #   ignore: master
 
+      - test_tensorflow_session_latest_py3_gpu:
+          requires:
+            - build_latest_py3_gpu
+
+      - test_keras_latest_py3_gpu:
+          requires:
+            - build_latest_py3_gpu
+
+      ############################################################
+      #           Jobs for Tensorflow Nightly Container           #
+      ############################################################
+
       - build_nightly_py3_gpu:
           filters:
             tags:
               ignore: /.*/
             # branches:
             #   ignore: master
+
+      - test_tensorflow_session_nightly_py3_gpu:
+          requires:
+            - build_nightly_py3_gpu
+
+      - test_keras_nightly_py3_gpu:
+          requires:
+            - build_nightly_py3_gpu
 
       # - test_nightly_py3_gpu:
       #     filters:
