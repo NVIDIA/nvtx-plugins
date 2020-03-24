@@ -21,7 +21,6 @@ using namespace tensorflow;
 
 // TODO(ahmadki): marker_id and domain handle should be uint64, but int64
 // might cause op placement issues.
-
 REGISTER_OP("NvtxStart")
     .Input("inputs: T")
     .Input("null_input: float32")
@@ -43,9 +42,9 @@ REGISTER_OP("NvtxStart")
       return Status::OK();
     })
     .Doc(R"doc(
-
-
 An identity graph node with a side effect of opening an NVTX marker.
+
+
 Arguments
     inputs: A `Tensor` object that will be passed to `output`.
     null_input: A `float32 Tensor` object used as a trick to force gradient

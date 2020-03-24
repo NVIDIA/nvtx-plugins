@@ -110,7 +110,6 @@ def start(inputs, message, domain_name=None,
     """
     if not enabled:
         return inputs, None
-    
     domain_name = domain_name or ''
     grad_message = grad_message or message
     grad_domain_name = grad_domain_name or domain_name or ''
