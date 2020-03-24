@@ -32,8 +32,8 @@ build_py3_gpu_template: &build_py3_gpu_template
           printf "\nFinished with Success !\n\n"
 
     - persist_to_workspace:
-      root: /workspace/build_cache
-      paths: ${CONTAINER_SAVE_RELPATH}
+      root: /workspace
+      paths: build_cache/*
 
 
 test_example_template: &test_example_template
@@ -58,6 +58,7 @@ test_example_template: &test_example_template
         command: |
           export CACHE_DIR="/workspace/build_cache"
           export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          ls -al ${CACHE_DIR}
           printf "\nLoading previously built docker image... Please wait\n\n"
           docker load -i "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
           printf "\nRunning Unittest ... Please Wait\n\n"
