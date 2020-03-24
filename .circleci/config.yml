@@ -27,13 +27,25 @@ build_py3_gpu_template: &build_py3_gpu_template
             --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
             --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
              - < .circleci/Dockerfile
-          printf "\nSaving  docker image to disk... Please wait\n\n"
-          docker save "nvtx_container" | gzip > "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
           printf "\nFinished with Success !\n\n"
 
-    - persist_to_workspace:
-        root: /workspace/build_cache
-        paths: ./*
+    # Replace above with these lines if the other python tests are activated
+    #     command: |
+    #       export CACHE_DIR="/workspace/build_cache"
+    #       export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+    #       mkdir -p "${CACHE_DIR}/${TENSORFLOW_CONTAINER_TAG}"
+    #       docker build -t "nvtx_container" \
+    #         --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
+    #         --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
+    #         --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
+    #          - < .circleci/Dockerfile
+    #       printf "\nSaving  docker image to disk... Please wait\n\n"
+    #       docker save "nvtx_container" | gzip > "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+    #       printf "\nFinished with Success !\n\n"
+    #
+    # - persist_to_workspace:
+    #     root: /workspace/build_cache
+    #     paths: ./*
 
 
 test_example_template: &test_example_template
@@ -155,7 +167,7 @@ workflows:
   #                         Jobs Triggered on Commit                         #
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
 
-  build-and-test:
+  commit:
     jobs:
 
       ############################################################
@@ -177,16 +189,14 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-            # branches:
-            #   ignore: master
 
-      - test_latest_py3_gpu_tensorflow_session:
-          requires:
-            - build_latest_py3_gpu
-
-      - test_latest_py3_gpu_keras:
-          requires:
-            - build_latest_py3_gpu
+      # - test_latest_py3_gpu_tensorflow_session:
+      #     requires:
+      #       - build_latest_py3_gpu
+      #
+      # - test_latest_py3_gpu_keras:
+      #     requires:
+      #       - build_latest_py3_gpu
 
       ############################################################
       #           Jobs for Tensorflow Nightly Container          #
@@ -199,13 +209,13 @@ workflows:
             # branches:
             #   ignore: master
 
-      - test_nightly_py3_gpu_tensorflow_session:
-          requires:
-            - build_nightly_py3_gpu
-
-      - test_nightly_py3_gpu_keras:
-          requires:
-            - build_nightly_py3_gpu
+      # - test_nightly_py3_gpu_tensorflow_session:
+      #     requires:
+      #       - build_nightly_py3_gpu
+      #
+      # - test_nightly_py3_gpu_keras:
+      #     requires:
+      #       - build_nightly_py3_gpu
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
   #                  Cron Jobs Triggered Every Early Morning                 #
@@ -227,10 +237,10 @@ workflows:
             tags:
               ignore: /.*/
 
-      - test_nightly_py3_gpu_tensorflow_session:
-          requires:
-            - build_nightly_py3_gpu
-
-      - test_nightly_py3_gpu_keras:
-          requires:
-            - build_nightly_py3_gpu
+      # - test_nightly_py3_gpu_tensorflow_session:
+      #     requires:
+      #       - build_nightly_py3_gpu
+      #
+      # - test_nightly_py3_gpu_keras:
+      #     requires:
+      #       - build_nightly_py3_gpu
