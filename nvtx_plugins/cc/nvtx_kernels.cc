@@ -20,7 +20,6 @@ limitations under the License.
 #include "tensorflow/core/framework/register_types.h"
 
 #include "nvToolsExt.h"
-#include <cuda_runtime_api.h>
 
 #define NVTX_DEFAULT_DOMAIN nullptr
 
