@@ -43,6 +43,8 @@ REGISTER_OP("NvtxStart")
       return Status::OK();
     })
     .Doc(R"doc(
+
+
 An identity graph node with a side effect of opening an NVTX marker.
 Arguments
     inputs: A `Tensor` object that will be passed to `output`.
@@ -50,6 +52,7 @@ Arguments
                 calculation. The tesnor is not used inside the op.
     message: A `String` message associated with this op.
     domain_name: A `String` domain name associated with this op.
+
 Output
     output: The input `Tensor` passed to the output.
     marker_id: An NVTX marker id that is passed to `NvtxEnd`.
@@ -77,12 +80,15 @@ REGISTER_OP("NvtxEnd")
     })
     .Doc(R"doc(
 An identity graph node with a side effect of closing an NVTX marker.
+
+
 Arguments
     inputs: A `Tensor` object that will be passed to `output`.
     marker_id: An NVTX marker id that is recived from `NvtxStart`.
     domain_handle: An NVTX domain handler that is recived from `NvtxStart`.
     grad_message: A `String` message associated with this op gradient.
     grad_domain_name: A `String` domain name associated with this op gradient.
+
 Output
     output: The input `Tensor` passed to the output.
     null_output: A `float32 Tensor` object used as a trick to force gradient

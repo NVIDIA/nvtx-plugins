@@ -21,6 +21,7 @@ limitations under the License.
 
 #include "nvToolsExt.h"
 
+
 #define NVTX_DEFAULT_DOMAIN nullptr
 
 using namespace tensorflow;
@@ -69,6 +70,7 @@ class DomainRegistry {
 };
 
 static DomainRegistry domain_registry;
+
 
 template <typename T>
 class NvtxStartOp : public OpKernel {
@@ -194,7 +196,5 @@ class NvtxEndOp : public OpKernel {
                               .TypeConstraint<type>("T"),         \
                           NvtxEndOp<type>);
 
-
 TF_CALL_NUMBER_TYPES(REGISTER_GPU_KERNEL);
-
 #undef REGISTER_GPU_KERNEL
