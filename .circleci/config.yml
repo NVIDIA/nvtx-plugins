@@ -116,13 +116,13 @@ jobs:
   #            Running Tensorflow Session Test          #
   # =================================================== #
 
-  test_tensorflow_session_latest_py3_gpu:
+  test_latest_py3_gpu_tensorflow_session:
     environment:
       TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
       PYTHON_EXAMPLE_FILE: "tf_session_example.py"
     <<: *test_example_template
 
-  test_tensorflow_session_nightly_py3_gpu:
+  test_nightly_py3_gpu_tensorflow_session:
     environment:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
       PYTHON_EXAMPLE_FILE: "tf_session_example.py"
@@ -132,13 +132,13 @@ jobs:
   #                Running Keras API Test               #
   # =================================================== #
 
-  test_keras_latest_py3_gpu:
+  test_latest_py3_gpu_keras:
     environment:
       TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
       PYTHON_EXAMPLE_FILE: "keras_example.py"
     <<: *test_example_template
 
-  test_keras_nightly_py3_gpu:
+  test_nightly_py3_gpu_keras:
     environment:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
       PYTHON_EXAMPLE_FILE: "keras_example.py"
@@ -180,11 +180,11 @@ workflows:
             # branches:
             #   ignore: master
 
-      - test_tensorflow_session_latest_py3_gpu:
+      - test_latest_py3_gpu_tensorflow_session:
           requires:
             - build_latest_py3_gpu
 
-      - test_keras_latest_py3_gpu:
+      - test_latest_py3_gpu_keras:
           requires:
             - build_latest_py3_gpu
 
@@ -199,11 +199,11 @@ workflows:
             # branches:
             #   ignore: master
 
-      - test_tensorflow_session_nightly_py3_gpu:
+      - test_nightly_py3_gpu_tensorflow_session:
           requires:
             - build_nightly_py3_gpu
 
-      - test_keras_nightly_py3_gpu:
+      - test_nightly_py3_gpu_keras:
           requires:
             - build_nightly_py3_gpu
 
@@ -227,10 +227,10 @@ workflows:
             tags:
               ignore: /.*/
 
-      - test_tensorflow_session_nightly_py3_gpu:
+      - test_nightly_py3_gpu_tensorflow_session:
           requires:
             - build_nightly_py3_gpu
 
-      - test_keras_nightly_py3_gpu:
+      - test_nightly_py3_gpu_keras:
           requires:
             - build_nightly_py3_gpu
