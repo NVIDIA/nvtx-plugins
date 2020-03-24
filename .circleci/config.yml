@@ -32,8 +32,8 @@ build_py3_gpu_template: &build_py3_gpu_template
           printf "\nFinished with Success !\n\n"
 
     - persist_to_workspace:
-      root: /workspace
-      paths: build_cache/*
+        root: /workspace/build_cache
+        paths: ./*
 
 
 test_example_template: &test_example_template
@@ -46,8 +46,8 @@ test_example_template: &test_example_template
   steps:
 
     - setup_remote_docker:
-      reusable: true
-      exclusive: true
+        reusable: true
+        exclusive: true
 
     - attach_workspace:
         # Must be absolute path or relative path from working_directory
