@@ -71,6 +71,37 @@ jobs:
   #             Building Base Images for Test           #
   # =================================================== #
 
+  build_documentation:
+
+    working_directory: /workspace
+
+    docker:
+      - image: docker:git
+
+    steps:
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: "Building NVTX-Plugins Documentation"
+
+          command: |
+            GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL/git@github.com:/https://github.com/}"
+            docker run --rm --workdir "/workspace/" \
+              -e GIT_REPOSITORY_URL \
+              -e CIRCLE_SHA1 \
+              python:3.7-buster \
+              bash -c "\
+                git clone \$GIT_REPOSITORY_URL && \
+                cd nvtx-plugins && \
+                git checkout \$CIRCLE_SHA1 && \
+                cd docs/ && \
+                pip install -r requirements.txt && \
+                make html"
+            printf "\nFinished with Success !\n\n"
+
   build_latest_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
@@ -126,6 +157,17 @@ workflows:
 
   build-and-test:
     jobs:
+
+      ############################################################
+      #           Jobs for NVTX-Plugins Documentation            #
+      ############################################################
+
+      - build_documentation:
+          filters:
+            tags:
+              ignore: /.*/
+            # branches:
+            #   ignore: master
 
       ############################################################
       #           Jobs for Tensorflow Latest Container           #
