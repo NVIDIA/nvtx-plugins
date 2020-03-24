@@ -56,8 +56,8 @@ def get_tf_pkgname():
     for pkg_name in ["tensorflow-gpu", "tf-nightly-gpu"]:
         if pkg_name in run_cmd("pip freeze | grep %s" % pkg_name):
             return pkg_name
-    else:
-        return "tensorflow"  # Default if not found
+
+    return "tensorflow"  # Default if not found
 
 
 REQUIRED_PACKAGES = ['wrapt', get_tf_pkgname()]
