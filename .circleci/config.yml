@@ -88,7 +88,7 @@ jobs:
           name: "Building NVTX-Plugins Documentation"
 
           command: |
-            GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL/git@github.com:/https://github.com/}"
+            export GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL/git@github.com:/https://github.com/}"
             docker run --rm --workdir "/workspace/" \
               -e GIT_REPOSITORY_URL \
               -e CIRCLE_SHA1 \
