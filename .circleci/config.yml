@@ -119,6 +119,11 @@ jobs:
 
 workflows:
   version: 2
+
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+  #                         Jobs Triggered on Commit                         #
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+
   build-and-test:
     jobs:
 
@@ -142,7 +147,7 @@ workflows:
             - build_latest_py3_gpu
 
       ############################################################
-      #           Jobs for Tensorflow Nightly Container           #
+      #           Jobs for Tensorflow Nightly Container          #
       ############################################################
 
       - build_nightly_py3_gpu:
@@ -160,9 +165,30 @@ workflows:
           requires:
             - build_nightly_py3_gpu
 
-      # - test_nightly_py3_gpu:
-      #     filters:
-      #       tags:
-      #         only: /\d+\.\d+(\.\d+)?(\S*)?$/
-      #       branches:
-      #         ignore: /.*/
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+  #                  Cron Jobs Triggered Every Early Morning                 #
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+
+  nightly:
+    triggers:
+      - schedule:
+          # Every day at 1pm UTC or 5AM PST or 6am PDT
+          cron: "0 13 * * *"
+          filters:
+            branches:
+              only:
+                - master
+
+    jobs:
+      - build_nightly_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - test_tensorflow_session_nightly_py3_gpu:
+          requires:
+            - build_nightly_py3_gpu
+
+      - test_keras_nightly_py3_gpu:
+          requires:
+            - build_nightly_py3_gpu
