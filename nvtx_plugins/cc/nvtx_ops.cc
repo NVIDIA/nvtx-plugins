@@ -92,4 +92,4 @@ Output
     output: The input `Tensor` passed to the output.
     null_output: A `float32 Tensor` object used as a trick to force gradient
                  calculation. The tesnor is not used inside the op.
-)doc"); 
+)doc");

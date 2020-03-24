@@ -110,11 +110,13 @@ def start(inputs, message, domain_name=None,
     """
     if not enabled:
         return inputs, None
+
     domain_name = domain_name or ''
     grad_message = grad_message or message
     grad_domain_name = grad_domain_name or domain_name or ''
 
     null_input = 1.
+
     if trainable:
         with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
             null_input = tf.compat.v1.get_variable('null_input', shape=(),
