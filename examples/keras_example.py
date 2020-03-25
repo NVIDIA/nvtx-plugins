@@ -14,7 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import numpy as np
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from tensorflow.keras import optimizers
 from tensorflow.keras.models import Model
