@@ -2,10 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sqlite3
 import subprocess
 import sys
-import time
 import unittest
+
+
+from abc import abstractmethod
+from abc import ABCMeta
+
+from contextlib import contextmanager
 
 
 __all__ = [
@@ -16,7 +22,13 @@ SUCCESS_CODE = 0
 SIGKILL_CODE = 9
 
 
-class CustomTestCase(unittest.TestCase):
+class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
+
+    __test__ = False
+
+    @abstractmethod
+    def JOB_NAME(self):
+        pass
 
     def run_command(self, job_name):
 
@@ -81,3 +93,39 @@ class CustomTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists(base_path + "sqlite"))
 
         return True
+
+    def test_execution(self):
+        self.assertTrue(self.run_command(self.JOB_NAME))
+
+    @staticmethod
+    @contextmanager
+    def open_db(db_file):
+        """ create a database connection to the SQLite database
+            specified by the db_file
+        :param db_file: database file
+        :return: Connection object or None
+        """
+        filepath = os.path.join("examples", db_file + ".sqlite")
+
+        conn = None
+        try:
+            conn = sqlite3.connect(filepath)
+        except Exception as e:
+            print(e)
+
+        yield conn
+
+        conn.close()
+
+    def query_report(self, conn, range_name):
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT count(*),  "
+            "avg(`end` - `start`) as `avg_exec_time` "
+            "FROM NVTX_EVENTS "
+            "WHERE `text` LIKE '{range_name}' ".format(range_name=range_name)
+        )
+
+        return cur.fetchone()
+
+

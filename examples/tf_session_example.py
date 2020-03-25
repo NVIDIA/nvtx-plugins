@@ -51,32 +51,33 @@ def batch_generator(features, labels, batch_size, steps):
 
 
 # Option 1: use decorators
-@nvtx_tf.ops.trace(message='Dense Block', domain_name='Forward',
-                   grad_domain_name='Gradient', enabled=ENABLE_NVTX, trainable=True)
+@nvtx_tf.ops.trace(message='Dense Block', grad_message='Dense Block grad',
+                   domain_name='Forward', grad_domain_name='Gradient',
+                   enabled=ENABLE_NVTX, trainable=True)
 def DenseBinaryClassificationNet(inputs):
     x = inputs
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 1',
-        domain_name='Forward', grad_domain_name='Gradient',
-        trainable=True, enabled=ENABLE_NVTX)
+        grad_message='Dense 1 grad', domain_name='Forward',
+        grad_domain_name='Gradient', trainable=True, enabled=ENABLE_NVTX)
     x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_1')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 2',
+    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 2', grad_message='Dense 2 grad',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
     x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_2')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 3',
+    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 3', grad_message='Dense 3 grad',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
     x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense_3')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 4',
+    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 4', grad_message='Dense 4 grad',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
     x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense_4')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 5',
+    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 5', grad_message='Dense 5 grad',
         domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
     x = tf.compat.v1.layers.dense(x, 1, activation=None, name='dense_5')
     x = nvtx_tf.ops.end(x, nvtx_context)
@@ -95,12 +96,10 @@ labels = dataset[:, 8]
 features_plh = tf.compat.v1.placeholder('float', [None, 8])
 labels_plh = tf.compat.v1.placeholder('float', [None, 1])
 
-
 logits = DenseBinaryClassificationNet(inputs=features_plh)
 loss = tf.math.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels_plh))
 acc = tf.math.reduce_mean(tf.compat.v1.metrics.accuracy(labels=labels_plh, predictions=tf.round(tf.nn.sigmoid(logits))))
 optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9, use_nesterov=True).minimize(loss)
-
 
 # Initialize variables. local variables are needed to be initialized for tf.metrics.*
 init_g = tf.compat.v1.global_variables_initializer()
