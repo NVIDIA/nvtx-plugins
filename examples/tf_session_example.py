@@ -20,17 +20,34 @@ import nvtx.plugins.tf as nvtx_tf
 from nvtx.plugins.tf.estimator import NVTXHook
 
 ENABLE_NVTX = True
-NUM_EPOCHS = 200
+TRAINING_STEPS = 5000
 
-def batch_generator(features, labels, batch_size=128):
+
+def batch_generator(features, labels, batch_size, steps):
     dataset_len = len(labels)
     idxs = list(range(dataset_len))
-    np.random.shuffle(idxs)
-    for i in range(dataset_len // batch_size):
-        features_batch = [features[j] for j in idxs[batch_size*i:batch_size*(i+1)]]
-        label_batch = [labels[j] for j in idxs[batch_size*i:batch_size*(i+1)]]
-        label_batch = np.expand_dims(label_batch, axis=1)
-        yield features_batch, label_batch
+
+    idxs_trunc = None
+
+    steps_per_epoch = dataset_len // batch_size
+
+    for step in range(steps):
+
+        start_idx = batch_size * (step % steps_per_epoch)
+
+        end_idx = batch_size * ((step + 1) % steps_per_epoch)
+        end_idx = end_idx if end_idx != 0 else (steps_per_epoch * batch_size)
+
+        if step % (steps_per_epoch) == 0:
+            np.random.shuffle(idxs)
+            idxs_trunc = idxs[0:batch_size * steps_per_epoch]
+
+        x_batch = np.array([features[j] for j in idxs_trunc[start_idx:end_idx]])
+
+        y_batch = np.array([labels[j] for j in idxs_trunc[start_idx:end_idx]])
+        y_batch = np.expand_dims(y_batch, axis=1)
+
+        yield x_batch, y_batch
 
 
 # Option 1: use decorators
@@ -71,8 +88,8 @@ tf.compat.v1.disable_eager_execution()
 
 # Load Dataset
 dataset = np.loadtxt('examples/pima-indians-diabetes.data.csv', delimiter=',')
-features = dataset[:,0:8]
-labels = dataset[:,8]
+features = dataset[:, 0:8]
+labels = dataset[:, 8]
 
 # tf Graph Inputs
 features_plh = tf.compat.v1.placeholder('float', [None, 8])
@@ -96,9 +113,15 @@ with tf.compat.v1.train.MonitoredSession(hooks=[nvtx_callback]) as sess:
     sess.run([init_g, init_l])
 
     # Run graph
-    for epoch in range(NUM_EPOCHS):
-        for (x, y) in batch_generator(features, labels, batch_size=128):
-            optimizer_, loss_, acc_ = sess.run([optimizer, loss, acc], feed_dict={features_plh: x, labels_plh: y})
-        print('Epoch: %d. loss=%f acc=%f' % (epoch+1, loss_, acc_))
+    for step, (x, y) in enumerate(batch_generator(features, labels, batch_size=128, steps=TRAINING_STEPS)):
+        _, loss_, acc_ = sess.run(
+            [optimizer, loss, acc],
+            feed_dict={features_plh: x, labels_plh: y}
+        )
 
-    print('Optimization Finished!')
+        if step % 100 == 0:
+            print('Step: %04d, loss=%f acc=%f' % (step, loss_, acc_))
+
+    print('\nFinal loss=%f acc=%f' % (loss_, acc_))
+
+print('Optimization Finished!')
