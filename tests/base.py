@@ -24,8 +24,6 @@ SIGKILL_CODE = 9
 
 class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
-    __test__ = False
-
     @abstractmethod
     def JOB_NAME(self):
         pass
@@ -94,9 +92,6 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
         return True
 
-    def test_execution(self):
-        self.assertTrue(self.run_command(self.JOB_NAME))
-
     @staticmethod
     @contextmanager
     def open_db(db_file):
@@ -117,15 +112,26 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
         conn.close()
 
-    def query_report(self, conn, range_name):
+    def query_report(self, conn, range_name, filter_negative_start=True):
+
+        filter_negative_start_query = "AND `start` > 0 "
+
         cur = conn.cursor()
         cur.execute(
-            "SELECT count(*),  "
-            "avg(`end` - `start`) as `avg_exec_time` "
+            "SELECT "
+                "count(*),  "
+                "avg(`end` - `start`) as `avg_exec_time` "
             "FROM NVTX_EVENTS "
-            "WHERE `text` LIKE '{range_name}' ".format(range_name=range_name)
+            "WHERE "
+                "`text` LIKE '{range_name}' "
+                "{filter_qry}".format(
+                    range_name=range_name,
+                    filter_qry=(
+                        filter_negative_start_query
+                        if filter_negative_start else
+                        ""
+                    )
+                )
         )
 
         return cur.fetchone()
-
-

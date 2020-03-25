@@ -9,11 +9,18 @@ from tests.base import CustomTestCase
 
 class KerasTestCase(CustomTestCase):
 
-    __test__ = True
     JOB_NAME = "keras_example"
+
+    def test_execution(self):
+        self.assertTrue(self.run_command(KerasTestCase.JOB_NAME))
 
     @pytest.mark.run(after='test_execution')
     def test_report_is_compliant(self):
+
+        import nvtx
+        import sys
+        # ['/usr/local/lib/python3.6/dist-packages/nvtx']
+        print(nvtx.__path__._path, file=sys.stderr)
 
         reference_count = -1
 
@@ -46,10 +53,18 @@ class KerasTestCase(CustomTestCase):
                     self.assertGreaterEqual(count, reference_count - 1)
                     self.assertLessEqual(count, reference_count + 1)
 
-            count, _ = self.query_report(conn, range_name="Train")
+            count, _ = self.query_report(
+                conn,
+                range_name="Train",
+                filter_negative_start=False
+            )
             self.assertEqual(count, 1)
 
-            count, _ = self.query_report(conn, range_name="epoch 0")
+            count, _ = self.query_report(
+                conn,
+                range_name="epoch 0",
+                filter_negative_start=False
+            )
             self.assertEqual(count, 1)
 
             count, _ = self.query_report(conn, range_name="batch %")

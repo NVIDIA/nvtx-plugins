@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+TF_CPP_MIN_LOG_LEVEL="3"
+
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${BASEDIR}/../
 
@@ -17,4 +19,6 @@ pip install --no-cache-dir --upgrade dist/nvtx-plugins-*.tar.gz
 rm -f examples/*.qdrep
 rm -f examples/*.sqlite
 
-pytest --full-trace
+# pytest --full-trace
+python -m tests.test_keras
+python -m tests.test_tensorflow_session

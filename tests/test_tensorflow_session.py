@@ -9,11 +9,18 @@ from tests.base import CustomTestCase
 
 class TensorflowSessionTestCase(CustomTestCase):
 
-    __test__ = True
     JOB_NAME = "tf_session_example"
+
+    def test_execution(self):
+        self.assertTrue(self.run_command(TensorflowSessionTestCase.JOB_NAME))
 
     @pytest.mark.run(after='test_execution')
     def test_report_is_compliant(self):
+
+        import nvtx
+        import sys
+        # ['/usr/local/lib/python3.6/dist-packages/nvtx']
+        print(nvtx.__path__._path, file=sys.stderr)
 
         reference_count = -1
 
@@ -56,7 +63,11 @@ class TensorflowSessionTestCase(CustomTestCase):
                 except AssertionError as e:
                     raise AssertionError("Issue with range: %s" % range) from e
 
-            count, _ = self.query_report(conn, range_name="Train")
+            count, _ = self.query_report(
+                conn,
+                range_name="Train",
+                filter_negative_start=False
+            )
             self.assertEqual(count, 1)
 
             count, _ = self.query_report(conn, range_name="step %")
