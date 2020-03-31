@@ -1,0 +1,246 @@
+version: 2.1
+
+build_py3_gpu_template: &build_py3_gpu_template
+
+  working_directory: /workspace
+
+  docker:
+    - image: docker:git
+
+  steps:
+
+    - setup_remote_docker:
+        reusable: true
+        exclusive: true
+
+    - checkout
+
+    - run:
+        name: "Building NVTX-Plugins Test Container"
+
+        command: |
+          export CACHE_DIR="/workspace/build_cache"
+          export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          mkdir -p "${CACHE_DIR}/${TENSORFLOW_CONTAINER_TAG}"
+          docker build -t "nvtx_container" \
+            --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
+            --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
+            --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
+             - < .circleci/Dockerfile
+          printf "\nFinished with Success !\n\n"
+
+    # Replace above with these lines if the other python tests are activated
+    #     command: |
+    #       export CACHE_DIR="/workspace/build_cache"
+    #       export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+    #       mkdir -p "${CACHE_DIR}/${TENSORFLOW_CONTAINER_TAG}"
+    #       docker build -t "nvtx_container" \
+    #         --build-arg TF_CONTAINER_VERSION="${TENSORFLOW_CONTAINER_TAG}" \
+    #         --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
+    #         --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
+    #          - < .circleci/Dockerfile
+    #       printf "\nSaving  docker image to disk... Please wait\n\n"
+    #       docker save "nvtx_container" | gzip > "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+    #       printf "\nFinished with Success !\n\n"
+    #
+    # - persist_to_workspace:
+    #     root: /workspace/build_cache
+    #     paths: ./*
+
+
+test_example_template: &test_example_template
+
+  working_directory: ~/build
+
+  docker:
+    - image: docker:git
+
+  steps:
+
+    - setup_remote_docker:
+        reusable: true
+        exclusive: true
+
+    - attach_workspace:
+        # Must be absolute path or relative path from working_directory
+        at: /workspace/build_cache
+
+    - run:
+        name: Running Test Case
+        command: |
+          export CACHE_DIR="/workspace/build_cache"
+          export CONTAINER_SAVE_RELPATH="${TENSORFLOW_CONTAINER_TAG}/nvtx_container.tar.gz"
+          printf "\nLoading previously built docker image... Please wait\n\n"
+          docker load -i "${CACHE_DIR}/${CONTAINER_SAVE_RELPATH}"
+          printf "\nRunning Unittest ... Please Wait\n\n"
+          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/${PYTHON_EXAMPLE_FILE}"
+          printf "\nFinished with Success !\n\n"
+
+
+jobs:
+
+  # =================================================== #
+  #             Building Base Images for Test           #
+  # =================================================== #
+
+  build_documentation:
+
+    working_directory: /workspace
+
+    docker:
+      - image: docker:git
+
+    steps:
+
+      - setup_remote_docker:
+          reusable: true
+          exclusive: true
+
+      - run:
+          name: "Building NVTX-Plugins Documentation"
+
+          command: |
+            export GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL/git@github.com:/https://github.com/}"
+            docker run --rm --workdir "/workspace/" \
+              -e GIT_REPOSITORY_URL \
+              -e CIRCLE_SHA1 \
+              python:3.7-buster \
+              bash -c "\
+                git clone \$GIT_REPOSITORY_URL && \
+                cd nvtx-plugins && \
+                git checkout \$CIRCLE_SHA1 && \
+                cd docs/ && \
+                pip install -r requirements.txt && \
+                make html"
+            printf "\nFinished with Success !\n\n"
+
+  build_latest_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_nightly_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  # =================================================== #
+  #            Running Tensorflow Session Test          #
+  # =================================================== #
+
+  test_latest_py3_gpu_tensorflow_session:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
+      PYTHON_EXAMPLE_FILE: "tf_session_example.py"
+    <<: *test_example_template
+
+  test_nightly_py3_gpu_tensorflow_session:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+      PYTHON_EXAMPLE_FILE: "tf_session_example.py"
+    <<: *test_example_template
+
+  # =================================================== #
+  #                Running Keras API Test               #
+  # =================================================== #
+
+  test_latest_py3_gpu_keras:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "latest-gpu-py3"
+      PYTHON_EXAMPLE_FILE: "keras_example.py"
+    <<: *test_example_template
+
+  test_nightly_py3_gpu_keras:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+      PYTHON_EXAMPLE_FILE: "keras_example.py"
+    <<: *test_example_template
+
+###################################################################################
+#                               CircleCI WORKFLOWS                                #
+###################################################################################
+
+workflows:
+  version: 2
+
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+  #                         Jobs Triggered on Commit                         #
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+
+  commit:
+    jobs:
+
+      ############################################################
+      #           Jobs for NVTX-Plugins Documentation            #
+      ############################################################
+
+      - build_documentation:
+          filters:
+            tags:
+              ignore: /.*/
+            # branches:
+            #   ignore: master
+
+      ############################################################
+      #           Jobs for Tensorflow Latest Container           #
+      ############################################################
+
+      - build_latest_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      # - test_latest_py3_gpu_tensorflow_session:
+      #     requires:
+      #       - build_latest_py3_gpu
+      #
+      # - test_latest_py3_gpu_keras:
+      #     requires:
+      #       - build_latest_py3_gpu
+
+      ############################################################
+      #           Jobs for Tensorflow Nightly Container          #
+      ############################################################
+
+      - build_nightly_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+            # branches:
+            #   ignore: master
+
+      # - test_nightly_py3_gpu_tensorflow_session:
+      #     requires:
+      #       - build_nightly_py3_gpu
+      #
+      # - test_nightly_py3_gpu_keras:
+      #     requires:
+      #       - build_nightly_py3_gpu
+
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+  #                  Cron Jobs Triggered Every Early Morning                 #
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+
+  nightly:
+    triggers:
+      - schedule:
+          # Every day at 1pm UTC or 5AM PST or 6am PDT
+          cron: "0 13 * * *"
+          filters:
+            branches:
+              only:
+                - master
+
+    jobs:
+      - build_nightly_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      # - test_nightly_py3_gpu_tensorflow_session:
+      #     requires:
+      #       - build_nightly_py3_gpu
+      #
+      # - test_nightly_py3_gpu_keras:
+      #     requires:
+      #       - build_nightly_py3_gpu

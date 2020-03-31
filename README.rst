@@ -1,4 +1,4 @@
-|License|  |Release|  |PyPI-Version|  |PyPI-Implementation|  |Documentation|
+|License|  |Release|  |PyPI-Version|  |PyPI-Implementation|  |Circle-CI|  |Documentation|
 
 NVTX Plugins for Deep Learning
 ===============================
@@ -248,3 +248,6 @@ This project is released under the Apache License, Version 2.0
 .. |PyPI-Implementation| image:: https://img.shields.io/pypi/implementation/nvtx-plugins.svg
    :target: https://pypi.org/project/nvtx-plugins/
    :alt: PyPI - Implementation
+
+.. |Circle-CI| image:: https://circleci.com/gh/NVIDIA/nvtx-plugins.svg?style=shield
+    :target: https://circleci.com/gh/NVIDIA/nvtx-plugins

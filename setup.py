@@ -46,18 +46,18 @@ from package_info import __version__
 from setup_utils import custom_build_ext
 
 
-def run_piped_subprocess(command):
+def run_cmd(command):
     ps = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return ps.communicate()[0].decode('utf-8').strip()
 
 
 def get_tf_pkgname():
-    cmd_rslt = run_piped_subprocess("pip freeze | grep tensorflow-gpu")
 
-    if "tensorflow-gpu" in cmd_rslt:
-        return "tensorflow-gpu"
-    else:
-        return "tensorflow"  # Default if not found
+    for pkg_name in ["tensorflow-gpu", "tf-nightly-gpu"]:
+        if pkg_name in run_cmd("pip freeze | grep %s" % pkg_name):
+            return pkg_name
+
+    return "tensorflow"  # Default if not found
 
 
 def req_file(filename, folder="requirements"):
