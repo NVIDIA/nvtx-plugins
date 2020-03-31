@@ -27,8 +27,12 @@ nogit/
 # nsys files
 *.qdrep
 *.qdstrm
+*.sqlite
+examples/*.sqlite
+examples/*.qdrep
 
 # Virtual envs
 venv/
 
 **/*egg-info/
+

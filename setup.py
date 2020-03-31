@@ -60,7 +60,20 @@ def get_tf_pkgname():
         return "tensorflow"  # Default if not found
 
 
-REQUIRED_PACKAGES = ['wrapt', get_tf_pkgname()]
+def req_file(filename, folder="requirements"):
+    with open(os.path.join(folder, filename)) as f:
+        content = f.readlines()
+    # you may also want to remove whitespace characters
+    # Example: `\n` at the end of each line
+    return [x.strip() for x in content]
+
+
+install_requires = req_file("requirements.txt") + [get_tf_pkgname()]
+extras_require = {
+    'test': req_file("requirements_test.txt"),
+}
+
+tests_requirements = extras_require["test"]
 
 tensorflow_nvtx_lib = Extension(
     'nvtx.plugins.tf.lib.nvtx_ops',
@@ -157,13 +170,15 @@ setup(
     cmdclass={'build_ext': lambda dist: custom_build_ext(dist, tensorflow_nvtx_lib)},
     ext_modules=[tensorflow_nvtx_lib],
 
-    # Contained modules and scripts.
-    install_requires=REQUIRED_PACKAGES,
+    # Add in any packaged data.
+    include_package_data=True,
     packages=['nvtx.plugins.tf', 'nvtx.plugins.tf.keras'],
     package_dir={'': 'nvtx_plugins/python'},
 
-    # Add in any packaged data.
-    include_package_data=True,
+    # Contained modules and scripts.
+    install_requires=install_requires,
+    extras_require=extras_require,
+    setup_requires=['pytest-runner'],
 
     zip_safe=False,
 

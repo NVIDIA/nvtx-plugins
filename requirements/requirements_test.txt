@@ -1,0 +1,4 @@
+parameterized>=0.7.1,<0.8
+pytest>=5.4.1,<5.5
+pytest-ordering
+pytest-runner>=5.2,<5.3

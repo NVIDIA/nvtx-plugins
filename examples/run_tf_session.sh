@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 export CUDA_LAUNCH_BLOCKING=1
+
 nsys profile \
   -d 60 \
   -w true \
