@@ -124,22 +124,22 @@ jobs:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
     <<: *build_py3_gpu_template
 
-  build_tf-1.14_py3_gpu:
+  build_tf_1-14_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "1.14.0-gpu-py3"
     <<: *build_py3_gpu_template
 
-  build_tf-1.15_py3_gpu:
+  build_tf_1-15_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "1.15.2-gpu-py3"
     <<: *build_py3_gpu_template
 
-  build_tf-2.0_py3_gpu:
+  build_tf_2-0_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "2.0.1-gpu-py3"
     <<: *build_py3_gpu_template
 
-  build_tf-2.1_py3_gpu:
+  build_tf_2-1_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "2.1.0-gpu-py3"
     <<: *build_py3_gpu_template
@@ -242,22 +242,22 @@ workflows:
       #       Jobs for Legacy Tensorflow Releases Container      #
       ############################################################
 
-      - build_tf-1.14_py3_gpu:
+      - build_tf_1-14_py3_gpu:
           filters:
             tags:
               ignore: /.*/
 
-      - build_tf-1.15_py3_gpu:
+      - build_tf_1-15_py3_gpu:
           filters:
             tags:
               ignore: /.*/
 
-      - build_tf-2.0_py3_gpu:
+      - build_tf_2-0_py3_gpu:
           filters:
             tags:
               ignore: /.*/
 
-      - build_tf-2.1_py3_gpu:
+      - build_tf_2-1_py3_gpu:
           filters:
             tags:
               ignore: /.*/
