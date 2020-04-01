@@ -124,6 +124,26 @@ jobs:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
     <<: *build_py3_gpu_template
 
+  build_tf-1.14_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "1.14.0-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf-1.15_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "1.15.2-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf-2.0_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "2.0.1-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf-2.1_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "2.1.0-gpu-py3"
+    <<: *build_py3_gpu_template
+
   # =================================================== #
   #            Running Tensorflow Session Test          #
   # =================================================== #
@@ -216,6 +236,31 @@ workflows:
       # - test_nightly_py3_gpu_keras:
       #     requires:
       #       - build_nightly_py3_gpu
+
+
+      ############################################################
+      #       Jobs for Legacy Tensorflow Releases Container      #
+      ############################################################
+
+      - build_tf-1.14_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - build_tf-1.15_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - build_tf-2.0_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - build_tf-2.1_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
   #                  Cron Jobs Triggered Every Early Morning                 #
