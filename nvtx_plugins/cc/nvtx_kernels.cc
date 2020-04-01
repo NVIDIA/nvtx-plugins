@@ -18,6 +18,7 @@ limitations under the License.
 
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
+#include "tensorflow/core/public/version.h"
 
 #include "nvToolsExt.h"
 
@@ -96,8 +97,14 @@ class NvtxStartOp : public OpKernel {
                 errors::InvalidArgument("domain_name must be scalar, ",
                                         "but received ",
                                         domain_t->shape().DebugString()));
-    const string message = message_t->flat<string>()(0);
-    const string domain_name = domain_t->flat<string>()(0);
+
+#if TF_MAJOR_VERSION > 2 || (TF_MAJOR_VERSION == 2 && TF_MINOR_VERSION >= 2)
+    const string message = message_t->flat<tstring>()(0);
+    const string domain_name = domain_t->flat<tstring>()(0);
+#else
+    const string message = message_t->flat<std::string>()(0);
+    const string domain_name = domain_t->flat<std::string>()(0);
+#endif
 
     // get domain handle (create one if necessary)
     nvtxDomainHandle_t domain_handle = NVTX_DEFAULT_DOMAIN;

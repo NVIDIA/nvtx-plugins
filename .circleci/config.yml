@@ -27,6 +27,7 @@ build_py3_gpu_template: &build_py3_gpu_template
             --build-arg GIT_REPOSITORY_URL="${CIRCLE_REPOSITORY_URL}" \
             --build-arg GIT_COMMIT_SHA1="${CIRCLE_SHA1}" \
              - < .circleci/Dockerfile
+          docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python -c 'import nvtx.plugins.tf'"
           printf "\nFinished with Success !\n\n"
 
     # Replace above with these lines if the other python tests are activated
@@ -46,7 +47,6 @@ build_py3_gpu_template: &build_py3_gpu_template
     # - persist_to_workspace:
     #     root: /workspace/build_cache
     #     paths: ./*
-
 
 test_example_template: &test_example_template
 
@@ -75,7 +75,6 @@ test_example_template: &test_example_template
           printf "\nRunning Unittest ... Please Wait\n\n"
           docker run --rm --workdir /dist/nvtx-plugins "nvtx_container" bash -c "python examples/${PYTHON_EXAMPLE_FILE}"
           printf "\nFinished with Success !\n\n"
-
 
 jobs:
 
@@ -122,6 +121,26 @@ jobs:
   build_nightly_py3_gpu:
     environment:
       TENSORFLOW_CONTAINER_TAG: "nightly-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf_1-14_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "1.14.0-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf_1-15_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "1.15.2-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf_2-0_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "2.0.1-gpu-py3"
+    <<: *build_py3_gpu_template
+
+  build_tf_2-1_py3_gpu:
+    environment:
+      TENSORFLOW_CONTAINER_TAG: "2.1.0-gpu-py3"
     <<: *build_py3_gpu_template
 
   # =================================================== #
@@ -216,6 +235,31 @@ workflows:
       # - test_nightly_py3_gpu_keras:
       #     requires:
       #       - build_nightly_py3_gpu
+
+
+      ############################################################
+      #       Jobs for Legacy Tensorflow Releases Container      #
+      ############################################################
+
+      - build_tf_1-14_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - build_tf_1-15_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - build_tf_2-0_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
+
+      - build_tf_2-1_py3_gpu:
+          filters:
+            tags:
+              ignore: /.*/
 
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
   #                  Cron Jobs Triggered Every Early Morning                 #
