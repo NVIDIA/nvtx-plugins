@@ -16,12 +16,6 @@ class TensorflowSessionTestCase(CustomTestCase):
 
     @pytest.mark.run(after='test_execution')
     def test_report_is_compliant(self):
-
-        import nvtx
-        import sys
-        # ['/usr/local/lib/python3.6/dist-packages/nvtx']
-        print(nvtx.__path__._path, file=sys.stderr)
-
         reference_count = -1
 
         range_names = [

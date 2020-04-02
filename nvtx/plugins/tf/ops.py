@@ -20,13 +20,12 @@ import tensorflow as tf
 
 from tensorflow.python.framework import ops
 
+from nvtx.c_extensions import tensorflow_nvtx_lib
 from nvtx.plugins.tf.ext_utils import load_library
-from nvtx.plugins.tf.ext_utils import get_ext_suffix
 
 __all__ = ['nvtx_tf_ops', 'start', 'end', 'trace']
 
-
-nvtx_tf_ops = load_library('lib/nvtx_ops' + get_ext_suffix())
+nvtx_tf_ops = load_library(tensorflow_nvtx_lib)
 
 def _maybe_convert_list_to_tensor(inputs):
 
@@ -231,7 +230,7 @@ def trace(message, domain_name=None,
             kwargs["inputs"] = inputs
         else:
             args = [inputs] + list(args[1:])
-            
+
         output = wrapped(*args, **kwargs)
         output = end(inputs=output, nvtx_context=nvtx_context, name=end_name)
 

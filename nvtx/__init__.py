@@ -15,21 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""NVTX Plugins"""
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
 
-from .package_info import __shortversion__
-from .package_info import __version__
-
-from .package_info import __package_name__
-from .package_info import __contact_names__
-from .package_info import __contact_emails__
-from .package_info import __homepage__
-from .package_info import __repository_url__
-from .package_info import __download_url__
-from .package_info import __description__
-from .package_info import __license__
-from .package_info import __keywords__
-
-import nvtx.plugins.tf.ops
-import nvtx.plugins.tf.estimator
-import nvtx.plugins.tf.keras
+from nvtx import c_extensions_utils
+from nvtx import c_extensions

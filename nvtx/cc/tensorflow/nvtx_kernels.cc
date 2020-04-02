@@ -14,63 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <map>
-
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/public/version.h"
 
-#include "nvToolsExt.h"
+#include "../common/nvtx_custom_markers.h"
 
 
 #define NVTX_DEFAULT_DOMAIN nullptr
 
 using namespace tensorflow;
-
-class DomainRegistry {
- public:
-  DomainRegistry()
-#ifdef NEED_NVTX_INIT
- : initialized(false)
-#endif
-  {
-  }
-
-  ~DomainRegistry() {
-    for (auto domain : domains) {
-      nvtxDomainDestroy(domain.second);
-    }
-  }
-
-  nvtxDomainHandle_t Register(const string &domain_name) {
-#ifdef NEED_NVTX_INIT
-    if (!initialized) {
-      nvtxInitializationAttributes_t initAttribs = {};
-      initAttribs.version = NVTX_VERSION;
-      initAttribs.size = NVTX_INITIALIZATION_ATTRIB_STRUCT_SIZE;
-
-      nvtxInitialize(&initAttribs);
-      initialized = true;
-    }
-#endif
-
-    auto it = domains.find(domain_name);
-    if (it != domains.end()) {
-      return it->second;
-    }
-
-    domains[domain_name] = nvtxDomainCreateA(domain_name.c_str());
-    return domains[domain_name];
-  }
-
- private:
-  std::map<string, nvtxDomainHandle_t> domains;
-#ifdef NEED_NVTX_INIT
-  bool initialized;
-#endif
-};
-
-static DomainRegistry domain_registry;
 
 
 template <typename T>
@@ -106,26 +59,13 @@ class NvtxStartOp : public OpKernel {
     const string domain_name = domain_t->flat<std::string>()(0);
 #endif
 
-    // get domain handle (create one if necessary)
-    nvtxDomainHandle_t domain_handle = NVTX_DEFAULT_DOMAIN;
-    if (!domain_name.empty()) {
-      domain_handle = domain_registry.Register(domain_name);
-    }
-
     // create nvtx marker
-    nvtxRangeId_t marker_id;
-    if (domain_handle != NVTX_DEFAULT_DOMAIN) {
-      nvtxEventAttributes_t attr = {};
-      attr.version = NVTX_VERSION;
-      // TODO(ahmadki): feature - ability to set the marker color
-      attr.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
-      attr.messageType = NVTX_MESSAGE_TYPE_ASCII;
-      attr.message.ascii = message.c_str();
+    const nvtx_markers::NvtxRangeDescriptor range_desc =
+      nvtx_markers::start_range(message.c_str(), domain_name.c_str());
 
-      marker_id = nvtxDomainRangeStartEx(domain_handle, &attr);
-    } else {
-      marker_id = nvtxRangeStart(message.c_str());
-    }
+    const nvtxRangeId_t marker_id = range_desc.range_id;
+    const nvtxDomainHandle_t domain_handle = range_desc.domain_handle;
+
 
     // push marker_id and domain_handle to outputs 1 and 2
     Tensor *output_marker_id = nullptr, *output_domain_handle = nullptr;
@@ -161,17 +101,15 @@ class NvtxEndOp : public OpKernel {
 
     // Close NVTX range
     const Tensor *marker_t, *domain_t;
+
     OP_REQUIRES_OK(context, context->input("marker_id", &marker_t));
     OP_REQUIRES_OK(context, context->input("domain_handle", &domain_t));
+
     auto marker_id = marker_t->scalar<int64>()();
     auto domain_handle = reinterpret_cast<nvtxDomainHandle_t>(
       marker_t->scalar<int64>()());
 
-    if (domain_handle != NVTX_DEFAULT_DOMAIN) {
-      nvtxDomainRangeEnd(domain_handle, marker_id);
-    } else {
-      nvtxRangeEnd(marker_id);
-    }
+    nvtx_markers::end_range(marker_id, domain_handle);
 
     Tensor *output_null_output = nullptr;
     OP_REQUIRES_OK(context,

@@ -18,8 +18,10 @@ __all__ = [
     'CustomTestCase',
 ]
 
+# http://people.cs.pitt.edu/~alanjawi/cs449/code/shell/UnixSignals.htm
 SUCCESS_CODE = 0
 SIGKILL_CODE = 9
+SIGTERM_CODE = 15
 
 
 class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
@@ -37,12 +39,12 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
                 pass
 
         def exec_cmd(cmd):
-            command_proc = subprocess.Popen(cmd)
-            return_code = command_proc.wait()
 
-            if return_code not in [SUCCESS_CODE, SIGKILL_CODE]:
+            command_proc = subprocess.run(" ".join(cmd), shell=True, check=False)
+
+            if command_proc.returncode not in [SUCCESS_CODE, SIGKILL_CODE, SIGTERM_CODE]:
                 sys.tracebacklimit = 0
-                stdout, stderr = command_proc.communicate()
+                stdout, stderr = command_proc.stdout, command_proc.stderr
                 raise RuntimeError(
                     "\n##################################################\n"
                     "[*] STDOUT:{error_stdout}\n"
@@ -66,6 +68,7 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
             '--trace=nvtx,cuda',
             '--output=examples/%s' % job_name,
             '--force-overwrite=true',
+            '--export=sqlite',
             '--stop-on-exit=true',
             '--kill=sigkill'
         ]
@@ -77,18 +80,11 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
         self.assertTrue(exec_cmd(run_command))
 
-        base_path = "examples/%s." % job_name
-        self.assertTrue(os.path.exists(base_path + "qdrep"))
+        report_path = "examples/%s." % job_name
 
-        command_export = [
-            "nsys-exporter",
-            "--export-sqlite",
-            "--input-file=examples/%s.qdrep" % job_name,
-            "--output-file=examples/%s.sqlite" % job_name
-        ]
-
-        self.assertTrue(exec_cmd(command_export))
-        self.assertTrue(os.path.exists(base_path + "sqlite"))
+        self.assertFalse(os.path.exists(report_path + "qdstrm"))
+        self.assertTrue(os.path.exists(report_path + "qdrep"))
+        self.assertTrue(os.path.exists(report_path + "sqlite"))
 
         return True
 

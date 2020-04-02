@@ -1,4 +1,13 @@
-recursive-include nvtx_plugins/ *.so
-include *.py
+recursive-include nvtx/ *.cc
+recursive-include nvtx/ *.cu
+recursive-include nvtx/ *.h
+recursive-include nvtx/ *.py
+
 include *.lds
+include *.py
+include *.txt
 include requirements/*.txt
+
+include LICENSE
+include README.rst
+include CHANGELOG.rst
