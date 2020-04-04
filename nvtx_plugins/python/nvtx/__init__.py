@@ -15,8 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""NVTX Plugins"""
+# from pkgutil import extend_path
+# __path__ = extend_path(__path__, __name__)
 
-from nvtx.plugins.tf import ops
-from nvtx.plugins.tf import estimator
-from nvtx.plugins.tf import keras
+import ctypes
+nvtx_clib = ctypes.cdll.LoadLibrary('libnvToolsExt.so')

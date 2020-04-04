@@ -55,6 +55,9 @@ from distutils.version import LooseVersion
 
 from setuptools.command.build_ext import build_ext
 
+import imp
+nvtx = imp.load_source('nvtx', 'nvtx_plugins/python/nvtx/__init__.py')
+
 from nvtx.c_extensions_utils import PyTExtension
 from nvtx.c_extensions_utils import TFExtension
 

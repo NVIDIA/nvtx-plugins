@@ -15,12 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nvtx.c_extensions_utils import PyTExtension
-from nvtx.c_extensions_utils import TFExtension
+try:
+    from nvtx.c_extensions_utils import CustomExtension
+    from nvtx.c_extensions_utils import TFExtension
+
+except ImportError:
+    import imp
+    c_extensions_utils = imp.load_source(
+        'c_extensions_utils',
+        'nvtx_plugins/python/nvtx/c_extensions_utils.py')
+
+    from c_extensions_utils import CustomExtension
+    from c_extensions_utils import TFExtension
 
 __all__ = [
-    "tensorflow_nvtx_lib"
+    "collect_all_c_extensions"
 ]
+
+
+def collect_all_c_extensions():
+    return [x for x in CustomExtension.get_instances()]
+
 
 tensorflow_nvtx_lib = TFExtension(
     name='nvtx.plugins.tf.lib.nvtx_ops',
@@ -28,8 +43,8 @@ tensorflow_nvtx_lib = TFExtension(
     define_macros=[('GOOGLE_CUDA', '1')],
     depends=[],
     export_symbols=[],
-    extra_compile_args=['-lnvToolsExt'],
-    extra_link_args=['-lnvToolsExt'],
+    extra_compile_args=[],
+    extra_link_args=[],
     include_dirs=[],
     language=None,
     libraries=[],
@@ -37,9 +52,9 @@ tensorflow_nvtx_lib = TFExtension(
     py_limited_api=False,
     runtime_library_dirs=[],
     sources=[
-        'nvtx/cc/common/nvtx_custom_markers.cc',
-        'nvtx/cc/tensorflow/nvtx_ops.cc',
-        'nvtx/cc/tensorflow/nvtx_kernels.cc',
+        'nvtx_plugins/cc/common/nvtx_custom_markers.cc',
+        'nvtx_plugins/cc/tensorflow/nvtx_ops.cc',
+        'nvtx_plugins/cc/tensorflow/nvtx_kernels.cc',
     ],
     swig_opts=[],
     undef_macros=["NDEBUG"],

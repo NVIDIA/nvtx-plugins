@@ -109,7 +109,7 @@ class NvtxEndOp : public OpKernel {
     auto domain_handle = reinterpret_cast<nvtxDomainHandle_t>(
       marker_t->scalar<int64>()());
 
-    nvtx_markers::end_range(marker_id, domain_handle);
+    nvtx_markers::end_range(marker_id);
 
     Tensor *output_null_output = nullptr;
     OP_REQUIRES_OK(context,

@@ -15,8 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pkgutil import extend_path
-__path__ = extend_path(__path__, __name__)
+import ctypes
 
-from nvtx import c_extensions_utils
-from nvtx import c_extensions
+nvtx_clib = ctypes.cdll.LoadLibrary('libnvToolsExt.so')
+
+__all__ = [
+    "nvtx_clib"
+]

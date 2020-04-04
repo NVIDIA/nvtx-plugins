@@ -30,6 +30,20 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
     def JOB_NAME(self):
         pass
 
+    @staticmethod
+    @contextmanager
+    def catch_assert_error(range_name):
+        try:
+            yield
+        except AssertionError as e:
+            raise type(e)(
+                "Issue with range: {range}\n{original_error}".format(
+                    range=range_name,
+                    original_error=str(e)
+                )
+            ).with_traceback(sys.exc_info()[2])
+
+
     def run_command(self, job_name):
 
         for ext in ["qdrep", "sqlite"]:
@@ -40,11 +54,14 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
         def exec_cmd(cmd):
 
-            command_proc = subprocess.run(" ".join(cmd), shell=True, check=False)
+            # command_proc = subprocess.run(" ".join(cmd), shell=True, check=False)
+            command_proc = subprocess.Popen(cmd)
+            return_code = command_proc.wait()
 
             if command_proc.returncode not in [SUCCESS_CODE, SIGKILL_CODE, SIGTERM_CODE]:
                 sys.tracebacklimit = 0
-                stdout, stderr = command_proc.stdout, command_proc.stderr
+                # stdout, stderr = command_proc.stdout, command_proc.stderr
+                stdout, stderr = command_proc.communicate()
                 raise RuntimeError(
                     "\n##################################################\n"
                     "[*] STDOUT:{error_stdout}\n"

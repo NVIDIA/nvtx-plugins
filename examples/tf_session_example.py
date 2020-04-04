@@ -15,6 +15,8 @@
 # limitations under the License.
 
 import os
+import pathlib
+
 import numpy as np
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -92,7 +94,13 @@ def DenseBinaryClassificationNet(inputs):
 tf.compat.v1.disable_eager_execution()
 
 # Load Dataset
-dataset = np.loadtxt('examples/pima-indians-diabetes.data.csv', delimiter=',')
+dataset = np.loadtxt(
+    os.path.join(
+        pathlib.Path(__file__).parent.absolute(),
+        'pima-indians-diabetes.data.csv'
+    ),
+    delimiter=','
+)
 features = dataset[:, 0:8]
 labels = dataset[:, 8]
 

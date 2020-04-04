@@ -27,45 +27,37 @@ import subprocess
 
 from setuptools import setup
 from setuptools import Command
+from setuptools import find_namespace_packages
 
-from nvtx.package_info import __contact_emails__
-from nvtx.package_info import __contact_names__
-from nvtx.package_info import __description__
-from nvtx.package_info import __download_url__
-from nvtx.package_info import __homepage__
-from nvtx.package_info import __keywords__
-from nvtx.package_info import __license__
-from nvtx.package_info import __package_name__
-from nvtx.package_info import __repository_url__
-from nvtx.package_info import __version__
+# sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins")))
+# sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python")))
+# sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx")))
 
-# Note: Do not remove these two lines, they define all the C Extensions
-from nvtx.c_extensions_utils import CustomExtension
-from nvtx.c_extensions import *
+import imp
+package_info = imp.load_source(
+    'package_info',
+    'nvtx_plugins/python/nvtx/package_info.py'
+)
+
+from package_info import __contact_emails__
+from package_info import __contact_names__
+from package_info import __description__
+from package_info import __download_url__
+from package_info import __homepage__
+from package_info import __keywords__
+from package_info import __license__
+from package_info import __package_name__
+from package_info import __repository_url__
+from package_info import __version__
+
+c_extensions = imp.load_source(
+    'c_extensions',
+    'nvtx_plugins/python/nvtx/c_extensions.py'
+)
+from c_extensions import collect_all_c_extensions
 
 from setup_utils import custom_build_ext
 
-# Force Build Cache Cleaning
-def force_clean_build_cache():
-    def distutils_dir_name(dname):
-
-        """Returns the name of a distutils build directory"""
-        f = "{dirname}.{platform}-{version[0]}.{version[1]}"
-        return f.format(dirname=dname,
-                        platform=sysconfig.get_platform(),
-                        version=sys.version_info)
-
-    for build_dir in ['lib', 'temp']:
-        buildpath = os.path.join('build', distutils_dir_name(build_dir), 'nvtx')
-        print("BUILD PATH:", buildpath)
-        try:
-            shutil.rmtree(buildpath)
-        except FileNotFoundError:
-            pass
-
-force_clean_build_cache()
-
-ext_modules = [x for x in CustomExtension.get_instances()]
 
 class VersionCommand(Command):
 
@@ -80,6 +72,31 @@ class VersionCommand(Command):
 
     def run(self):
         print(__version__)
+
+
+# Force Build Cache Cleaning
+def force_clean_build_cache():
+    def distutils_dir_name(dname):
+
+        """Returns the name of a distutils build directory"""
+        f = "{dirname}.{platform}-{version[0]}.{version[1]}"
+        return f.format(dirname=dname,
+                        platform=sysconfig.get_platform(),
+                        version=sys.version_info)
+
+    for build_dir in ['lib', 'temp']:
+        buildpath = os.path.join('build', distutils_dir_name(build_dir), 'nvtx')
+        try:
+            shutil.rmtree(buildpath)
+        except FileNotFoundError:
+            pass
+
+    cache_dirs = [".eggs", ".pytest_cache", "build", "nvtx_plugins.egg-info"]
+    for dir in cache_dirs:
+        try:
+            shutil.rmtree(dir)
+        except FileNotFoundError:
+            pass
 
 
 def run_cmd(command):
@@ -104,13 +121,14 @@ def req_file(filename, folder="requirements"):
     return [x.strip() for x in content]
 
 
+force_clean_build_cache()
+
 install_requires = req_file("requirements.txt") + [get_tf_pkgname()]
 extras_require = {
     'test': req_file("requirements_test.txt"),
 }
 
 tests_requirements = extras_require["test"]
-
 
 
 # =================== Reading Readme file as TXT files ===================
@@ -198,11 +216,12 @@ setup(
         'build_ext': custom_build_ext,
         'version': VersionCommand,
     },
-    ext_modules=[tensorflow_nvtx_lib],
+    ext_modules=collect_all_c_extensions(),
 
     # Add in any packaged data.
     include_package_data=True,
-    packages=['nvtx.plugins.tf', 'nvtx.plugins.tf.keras'],
+    packages=find_namespace_packages(where='nvtx_plugins/python/'),
+    package_dir={'': 'nvtx_plugins/python'},
 
     # Contained modules and scripts.
     install_requires=install_requires,

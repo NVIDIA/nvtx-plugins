@@ -15,5 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pkgutil import extend_path
-__path__ = extend_path(__path__, __name__)
+import ctypes
+
+from nvtx.c_extensions import tensorflow_nvtx_lib
+from nvtx.plugins.tf.ext_utils import load_library
+
+nvtx_tf_ops = load_library(tensorflow_nvtx_lib)
+
+from nvtx.plugins.tf import keras
+from nvtx.plugins.tf import ops
+
+
+__all__ = [
+    "nvtx_tf_ops",
+
+    # sub packages
+    "keras",
+    "ops"
+]

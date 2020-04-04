@@ -33,7 +33,6 @@
 # ==============================================================================
 
 import os
-import sysconfig
 
 from tensorflow.python.framework import load_library as _load_library
 from tensorflow.python.platform import resource_loader
@@ -45,7 +44,8 @@ from nvtx.common.ext_utils import get_extension_relative_path
 __all__ = ["load_library"]
 
 
-# Source: https://github.com/horovod/horovod/blob/abc3d88544/horovod/tensorflow/mpi_ops.py#L33
+# Source:
+# https://github.com/horovod/horovod/blob/abc3d/horovod/tensorflow/mpi_ops.py#L33
 def load_library(extension):
     """Loads a .so file containing the specified operators.
     Args:
@@ -55,7 +55,10 @@ def load_library(extension):
     """
 
     if not isinstance(extension, TFExtension):
-        raise ValueError("The extension received is not an instance of `TFExtension`: %s" % extension)
+        raise ValueError(
+            "The extension received is not an instance of `TFExtension`: %s" %
+            extension
+        )
 
     name = get_extension_relative_path(extension)
     name = os.path.join(*name.split(os.path.sep)[3:])

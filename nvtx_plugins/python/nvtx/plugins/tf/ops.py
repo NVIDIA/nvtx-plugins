@@ -19,13 +19,10 @@ import wrapt
 import tensorflow as tf
 
 from tensorflow.python.framework import ops
+from nvtx.plugins.tf import nvtx_tf_ops
 
-from nvtx.c_extensions import tensorflow_nvtx_lib
-from nvtx.plugins.tf.ext_utils import load_library
+__all__ = ['start', 'end', 'trace']
 
-__all__ = ['nvtx_tf_ops', 'start', 'end', 'trace']
-
-nvtx_tf_ops = load_library(tensorflow_nvtx_lib)
 
 def _maybe_convert_list_to_tensor(inputs):
 

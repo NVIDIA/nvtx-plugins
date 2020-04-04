@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import unittest
 import pytest
 
@@ -19,29 +20,33 @@ class TensorflowSessionTestCase(CustomTestCase):
         reference_count = -1
 
         range_names = [
-            "Dense 1",
-            "Dense 1 grad",
-            "Dense 2",
-            "Dense 2 grad",
-            "Dense 3",
-            "Dense 3 grad",
-            "Dense 4",
-            "Dense 4 grad",
-            "Dense 5",
-            "Dense 5 grad",
-            "Dense Block",
-            "Dense Block grad"
+            # ("name", time_target)
+            ("Dense 1", 9e4),  # 93,230
+            ("Dense 1 grad", 1.9e5),  # 191,680
+            ("Dense 2", 9e4),  # 92,629
+            ("Dense 2 grad", 1.9e5),  # 193,426
+            ("Dense 3", 1e5),  # 103,867
+            ("Dense 3 grad", 2.0e5),  # 196,523
+            ("Dense 4", 9e4),  # 86,882
+            ("Dense 4 grad", 2.0e5),  # 204,076
+            ("Dense 5", 5e4),  # 49,689
+            ("Dense 5 grad", 1.7e5),  # 172,503
+            ("Dense Block", 8.7e5),  # 866,847
+            ("Dense Block grad", 1.02e6)  # 1,017,128
         ]
 
         with self.open_db(TensorflowSessionTestCase.JOB_NAME) as conn:
 
-            for range in range_names:
+            for range_name, time_target in range_names:
 
-                try:
+                with self.catch_assert_error(range_name):
                     count, avg_exec_time = self.query_report(
                         conn,
-                        range_name=range
+                        range_name=range_name
                     )
+
+                    self.assertGreaterEqual(avg_exec_time, time_target / 3)
+                    self.assertLessEqual(avg_exec_time, time_target * 3)
 
                     if reference_count < 0:
                         # At least 500 steps should be processed
@@ -53,9 +58,6 @@ class TensorflowSessionTestCase(CustomTestCase):
                     # Hence the a we check for a range instead of strict equal.
                     self.assertGreaterEqual(count, reference_count - 1)
                     self.assertLessEqual(count, reference_count + 1)
-
-                except AssertionError as e:
-                    raise AssertionError("Issue with range: %s" % range) from e
 
             count, _ = self.query_report(
                 conn,

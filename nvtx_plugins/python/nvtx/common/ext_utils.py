@@ -32,10 +32,32 @@
 import os
 import sysconfig
 
-__all__ = ["get_ext_suffix", "check_extension_is_available"]
+__all__ = [
+    "get_extension_full_path",
+]
 
 
-def get_ext_suffix():
+def check_extension_is_available(extension):
+    if not os.path.exists(get_extension_relative_path(extension)):
+        raise FileNotFoundError(
+            'The extension `%s` has not been built.\n'
+            'If this is not expected, please reinstall to debug the build error' % extension.name.split('.')[-1]
+        )
+
+
+def get_extension_full_path(pkg_path, *args):
+    assert len(args) >= 1
+    dir_path = os.path.join(os.path.dirname(pkg_path), *args[:-1])
+    full_path = os.path.join(dir_path, args[-1] + get_extension_suffix())
+    return full_path
+
+
+def get_extension_relative_path(extension):
+    ext_path = extension.name.split(".")
+    return os.path.join(*ext_path[:-1], ext_path[-1] + get_extension_suffix())
+
+
+def get_extension_suffix():
     """Determine library extension for various versions of Python."""
     ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
 
@@ -47,23 +69,3 @@ def get_ext_suffix():
         return ext_suffix
 
     return '.so'
-
-
-def get_extension_full_path(pkg_path, *args):
-    assert len(args) >= 1
-    dir_path = os.path.join(os.path.dirname(pkg_path), *args[:-1])
-    full_path = os.path.join(dir_path, args[-1] + get_ext_suffix())
-    return full_path
-
-
-def get_extension_relative_path(extension):
-    ext_path = extension.name.split(".")
-    return os.path.join(*ext_path[:-1], ext_path[-1] + get_ext_suffix())
-
-
-def check_extension_is_available(extension):
-    if not os.path.exists(get_extension_relative_path(extension)):
-        raise FileNotFoundError(
-            'The extension `%s` has not been built.\n'
-            'If this is not expected, please reinstall to debug the build error' % extension.name.split('.')[-1]
-        )
