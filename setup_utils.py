@@ -55,12 +55,6 @@ from distutils.version import LooseVersion
 
 from setuptools.command.build_ext import build_ext
 
-import imp
-nvtx = imp.load_source('nvtx', 'nvtx_plugins/python/nvtx/__init__.py')
-
-from nvtx.c_extensions_utils import PyTExtension
-from nvtx.c_extensions_utils import TFExtension
-
 # Torch must be imported first
 try:
     import torch
@@ -456,11 +450,11 @@ class custom_build_ext(build_ext):
 
             with self._filter_build_errors(extension):
 
-                if isinstance(extension, TFExtension):
+                if extension.__class__.__name__ == "TFExtension":
                     build_tf_extension(self, extension, options)
                     extension._built_with_success = True
 
-                elif isinstance(extension, PyTExtension):
+                elif extension.__class__.__name__ == "PyTExtension":
                     build_torch_extension(self, extension, options)
                     extension._built_with_success = True
 
