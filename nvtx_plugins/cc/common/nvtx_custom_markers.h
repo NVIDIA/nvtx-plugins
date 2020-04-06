@@ -35,7 +35,7 @@ static const nvtxDomainHandle_t NvtxDefaultDomain =
 using named_category = nvtx3::named_category<_NvtxDefaultDomain>;
 
 NvtxRangeDescriptor NVTX_API start_range(
-  const std::string range_name, const std::string category_name);
+  const std::string& range_name, const std::string& category_name);
 
 void NVTX_API end_range(const nvtxRangeId_t range_id);
 
