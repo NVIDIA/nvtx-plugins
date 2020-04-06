@@ -1538,15 +1538,15 @@ class event_attributes {
    */
   constexpr event_attributes() noexcept
       : attributes_{
-            NVTX_VERSION,                   // version
-            sizeof(nvtxEventAttributes_t),  // size
-            0,                              // category
-            NVTX_COLOR_UNKNOWN,             // color type
-            0,                              // color value
-            NVTX_PAYLOAD_UNKNOWN,           // payload type
-            {},                             // payload value (union)
-            NVTX_MESSAGE_UNKNOWN,           // message type
-            {}                              // message value (union)
+            NVTX_VERSION,                  // version
+            sizeof(nvtxEventAttributes_t), // size
+            0,                             // category
+            NVTX_COLOR_UNKNOWN,            // color type
+            0,                             // color value
+            NVTX_PAYLOAD_UNKNOWN,          // payload type
+            0,                             // payload value (union)
+            NVTX_MESSAGE_UNKNOWN,          // message type
+            0                              // message value (union)
         } {}
 
   /**
