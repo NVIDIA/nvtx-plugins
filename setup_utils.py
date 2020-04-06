@@ -404,11 +404,11 @@ class custom_build_ext(build_ext):
         try:
             yield
 
-        except (CCompilerError, DistutilsError, CompileError) as e:
-            if not ext.optional:
-                raise
-
-            warn('building extension "%s" failed: %s' % (ext.name, e))
+        # except (CCompilerError, DistutilsError, CompileError) as e:
+        #     if not ext.optional:
+        #         raise
+        #
+        #     warn('building extension "%s" failed: %s' % (ext.name, e))
 
         except ModuleNotFoundError:
             if not ext.optional:
