@@ -7,6 +7,7 @@ rm -rf artifacts/
 rm -rf build/
 rm -rf dist/
 rm -rf docs/_build/
+rm -rf .pytest_cache/
 
 rm -rf nvtx_plugins/**/*.egg-info/
 
@@ -18,4 +19,6 @@ done
 
 find . | grep -E "(__pycache__|\.pyc|\.pyo|\.so$)" | xargs rm -rf
 
-rm -f examples/*qd*
+rm -f examples/*.qdrep
+rm -f examples/*.qdstm
+rm -f examples/*.sqlite

@@ -6,10 +6,6 @@
 
 #include "nvtx3.hpp"
 
-//#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-//  TypeName(const TypeName&) = delete;         \
-//  void operator=(const TypeName&) = delete
-
 namespace nvtx_markers {
 
 static const nvtx3::rgb COLOR_RED{255, 0, 0};
@@ -37,42 +33,6 @@ static const nvtxDomainHandle_t NvtxDefaultDomain =
   nvtx3::domain::get<_NvtxDefaultDomain>();
 
 using named_category = nvtx3::named_category<_NvtxDefaultDomain>;
-
-//class NvtxDomain {
-// public:
-//  explicit NvtxDomain(const char* name) : handle_(nvtxDomainCreateA(name)) {}
-//  ~NvtxDomain() { nvtxDomainDestroy(handle_); }
-//  operator nvtxDomainHandle_t() const { return handle_; }
-//
-// private:
-//  DISALLOW_COPY_AND_ASSIGN(NvtxDomain);
-//  nvtxDomainHandle_t handle_;
-//};
-
-
-
-//class DomainRegistry {
-// public:
-//  DomainRegistry()
-//#ifdef NEED_NVTX_INIT
-// : initialized(false)
-//#endif
-//  {}
-//
-//  ~DomainRegistry();
-//
-//  nvtxDomainHandle_t Register(const std::string &domain_name);
-//
-// private:
-//  std::map<std::string, nvtxDomainHandle_t> domains;
-//#ifdef NEED_NVTX_INIT
-//  bool initialized;
-//#endif
-//};
-
-//static DomainRegistry domain_registry;
-
-//static const NvtxDomain NVTX_DEFAULT_DOMAIN{"nvtx-plugins"};
 
 NvtxRangeDescriptor NVTX_API start_range(
   const std::string range_name, const std::string category_name);
