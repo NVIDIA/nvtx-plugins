@@ -28,32 +28,32 @@ from nvtx.plugins.tf.estimator import NVTXHook
 ENABLE_NVTX = True
 TRAINING_STEPS = 5000
 
+tf.compat.v1.disable_eager_execution()
 
-def batch_generator(features, labels, batch_size, steps):
-    dataset_len = len(labels)
-    idxs = list(range(dataset_len))
 
-    idxs_trunc = None
+def get_dataset(batch_size):
+  # load pima indians dataset
+  csv_data = np.loadtxt(
+      os.path.join(
+          pathlib.Path(__file__).parent.absolute(),
+          'pima-indians-diabetes.data.csv'
+      ),
+      delimiter=','
+  )
 
-    steps_per_epoch = dataset_len // batch_size
+  features_arr = csv_data[:, 0:8]
+  labels_arr = csv_data[:, 8]
+  labels_arr = np.expand_dims(labels_arr, axis=1)
 
-    for step in range(steps):
+  ds_x = tf.data.Dataset.from_tensor_slices(features_arr)
+  ds_y = tf.data.Dataset.from_tensor_slices(labels_arr)
 
-        start_idx = batch_size * (step % steps_per_epoch)
+  ds = tf.data.Dataset.zip((ds_x, ds_y))
 
-        end_idx = batch_size * ((step + 1) % steps_per_epoch)
-        end_idx = end_idx if end_idx != 0 else (steps_per_epoch * batch_size)
-
-        if step % (steps_per_epoch) == 0:
-            np.random.shuffle(idxs)
-            idxs_trunc = idxs[0:batch_size * steps_per_epoch]
-
-        x_batch = np.array([features[j] for j in idxs_trunc[start_idx:end_idx]])
-
-        y_batch = np.array([labels[j] for j in idxs_trunc[start_idx:end_idx]])
-        y_batch = np.expand_dims(y_batch, axis=1)
-
-        yield x_batch, y_batch
+  ds = ds.shuffle(buffer_size=batch_size*2).repeat()
+  ds = ds.batch(batch_size, drop_remainder=True)
+  ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
+  return ds
 
 
 # Option 1: use decorators
@@ -91,48 +91,36 @@ def DenseBinaryClassificationNet(inputs):
     predictions = x
     return predictions
 
-tf.compat.v1.disable_eager_execution()
+if __name__ == "__main__":
 
-# Load Dataset
-dataset = np.loadtxt(
-    os.path.join(
-        pathlib.Path(__file__).parent.absolute(),
-        'pima-indians-diabetes.data.csv'
-    ),
-    delimiter=','
-)
-features = dataset[:, 0:8]
-labels = dataset[:, 8]
+    # Load Dataset
+    dataset = get_dataset(128)
 
-# tf Graph Inputs
-features_plh = tf.compat.v1.placeholder('float', [None, 8])
-labels_plh = tf.compat.v1.placeholder('float', [None, 1])
+    iterator = tf.compat.v1.data.make_one_shot_iterator(dataset)
+    features, labels = iterator.get_next()
 
-logits = DenseBinaryClassificationNet(inputs=features_plh)
-loss = tf.math.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels_plh))
-acc = tf.math.reduce_mean(tf.compat.v1.metrics.accuracy(labels=labels_plh, predictions=tf.round(tf.nn.sigmoid(logits))))
-optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9, use_nesterov=True).minimize(loss)
+    logits = DenseBinaryClassificationNet(inputs=features)
+    loss = tf.math.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels))
+    acc = tf.math.reduce_mean(tf.compat.v1.metrics.accuracy(labels=labels, predictions=tf.round(tf.nn.sigmoid(logits))))
+    optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9, use_nesterov=True).minimize(loss)
 
-# Initialize variables. local variables are needed to be initialized for tf.metrics.*
-init_g = tf.compat.v1.global_variables_initializer()
-init_l = tf.compat.v1.local_variables_initializer()
+    # Initialize variables. local variables are needed to be initialized for tf.metrics.*
+    init_g = tf.compat.v1.global_variables_initializer()
+    init_l = tf.compat.v1.local_variables_initializer()
 
-nvtx_callback = NVTXHook(skip_n_steps=1, name='Train')
+    nvtx_callback = NVTXHook(skip_n_steps=1, name='Train')
 
-# Start training
-with tf.compat.v1.train.MonitoredSession(hooks=[nvtx_callback]) as sess:
-    sess.run([init_g, init_l])
+    # Start training
+    with tf.compat.v1.train.MonitoredSession(hooks=[nvtx_callback]) as sess:
+        sess.run([init_g, init_l])
 
-    # Run graph
-    for step, (x, y) in enumerate(batch_generator(features, labels, batch_size=128, steps=TRAINING_STEPS)):
-        _, loss_, acc_ = sess.run(
-            [optimizer, loss, acc],
-            feed_dict={features_plh: x, labels_plh: y}
-        )
+        # Run graph
+        for step in range(TRAINING_STEPS):
+            _, loss_, acc_ = sess.run([optimizer, loss, acc])
 
-        if step % 100 == 0:
-            print('Step: %04d, loss=%f acc=%f' % (step, loss_, acc_))
+            if step % 100 == 0:
+                print('Step: %04d, loss=%f acc=%f' % (step, loss_, acc_))
 
-    print('\nFinal loss=%f acc=%f' % (loss_, acc_))
+        print('\nFinal loss=%f acc=%f' % (loss_, acc_))
 
-print('Optimization Finished!')
+    print('Optimization Finished!')
