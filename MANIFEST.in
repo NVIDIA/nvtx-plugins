@@ -1,6 +1,7 @@
 recursive-include nvtx_plugins/ *.cc
 recursive-include nvtx_plugins/ *.cu
 recursive-include nvtx_plugins/ *.h
+recursive-include nvtx_plugins/ *.hpp
 recursive-include nvtx_plugins/ *.py
 
 include *.lds
