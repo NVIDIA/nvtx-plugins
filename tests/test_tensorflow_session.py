@@ -9,6 +9,8 @@ from distutils.version import LooseVersion
 
 import tensorflow as tf
 
+TIMING_THRESHOLD = 5
+
 
 class TensorflowSessionTestCase(NVTXBaseTest):
 
@@ -65,8 +67,12 @@ class TensorflowSessionTestCase(NVTXBaseTest):
                         range_name=range_name
                     )
 
-                    self.assertGreaterEqual(avg_exec_time, time_target / 3)
-                    self.assertLessEqual(avg_exec_time, time_target * 3)
+                    self.assertGreaterEqual(
+                        avg_exec_time, time_target / TIMING_THRESHOLD
+                    )
+                    self.assertLessEqual(
+                        avg_exec_time, time_target * TIMING_THRESHOLD
+                    )
 
                     if reference_count < 0:
                         # At least 500 steps should be processed

@@ -9,6 +9,8 @@ from distutils.version import LooseVersion
 
 import tensorflow as tf
 
+TIMING_THRESHOLD = 5
+
 
 class KerasTestCase(NVTXBaseTest):
 
@@ -62,8 +64,12 @@ class KerasTestCase(NVTXBaseTest):
                         range_name=range_name
                     )
 
-                    self.assertGreaterEqual(avg_exec_time, time_target / 3)
-                    self.assertLessEqual(avg_exec_time, time_target * 3)
+                    self.assertGreaterEqual(
+                        avg_exec_time, time_target / TIMING_THRESHOLD
+                    )
+                    self.assertLessEqual(
+                        avg_exec_time, time_target * TIMING_THRESHOLD
+                    )
 
                     if reference_count < 0:
                         # At least 500 steps should be processed
@@ -75,7 +81,6 @@ class KerasTestCase(NVTXBaseTest):
                     self.assertGreaterEqual(count, reference_count - 1)
                     self.assertLessEqual(count, reference_count + 1)
 
-            # if LooseVersion(tf.__version__) >= LooseVersion("1.4.0"):
             count, _ = self.query_report(
                 conn,
                 range_name="Train",
