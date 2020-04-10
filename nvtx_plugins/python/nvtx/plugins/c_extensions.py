@@ -16,14 +16,14 @@
 # limitations under the License.
 
 try:
-    from nvtx.c_extensions_utils import CustomExtension
-    from nvtx.c_extensions_utils import TFExtension
+    from nvtx.plugins.c_extensions_utils import CustomExtension
+    from nvtx.plugins.c_extensions_utils import TFExtension
 
 except ImportError:
     import imp
     c_extensions_utils = imp.load_source(
         'c_extensions_utils',
-        'nvtx_plugins/python/nvtx/c_extensions_utils.py')
+        'nvtx_plugins/python/nvtx/plugins/c_extensions_utils.py')
 
     from c_extensions_utils import CustomExtension
     from c_extensions_utils import TFExtension

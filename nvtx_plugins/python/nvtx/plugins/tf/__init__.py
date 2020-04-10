@@ -17,7 +17,7 @@
 
 import ctypes
 
-from nvtx.c_extensions import tensorflow_nvtx_lib
+from nvtx.plugins.c_extensions import tensorflow_nvtx_lib
 from nvtx.plugins.tf.ext_utils import load_library
 
 nvtx_tf_ops = load_library(tensorflow_nvtx_lib)

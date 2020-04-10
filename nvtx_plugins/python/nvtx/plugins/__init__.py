@@ -15,10 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
-
-nvtx_clib = ctypes.cdll.LoadLibrary('libnvToolsExt.so')
-
-__all__ = [
-    "nvtx_clib"
-]
+from nvtx.plugins.package_info import (
+    __shortversion__,
+    __version__,
+    __package_name__,
+    __contact_names__,
+    __contact_emails__,
+    __homepage__,
+    __repository_url__,
+    __download_url__,
+    __description__,
+    __license__,
+    __keywords__
+)

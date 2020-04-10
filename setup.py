@@ -29,14 +29,10 @@ from setuptools import setup
 from setuptools import Command
 from setuptools import find_namespace_packages
 
-# sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins")))
-# sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python")))
-# sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx")))
-
 import imp
 package_info = imp.load_source(
     'package_info',
-    'nvtx_plugins/python/nvtx/package_info.py'
+    'nvtx_plugins/python/nvtx/plugins/package_info.py'
 )
 
 from package_info import __contact_emails__
@@ -52,7 +48,7 @@ from package_info import __version__
 
 c_extensions = imp.load_source(
     'c_extensions',
-    'nvtx_plugins/python/nvtx/c_extensions.py'
+    'nvtx_plugins/python/nvtx/plugins/c_extensions.py'
 )
 from c_extensions import collect_all_c_extensions
 
