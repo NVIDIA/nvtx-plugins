@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import unittest
 import pytest
 
-from tests.base import CustomTestCase
+from tests.base import NVTXBaseTest
 
 
-class TensorflowSessionTestCase(CustomTestCase):
+class TensorflowSessionTestCase(NVTXBaseTest):
 
     JOB_NAME = "tf_session_example"
 
@@ -21,18 +20,18 @@ class TensorflowSessionTestCase(CustomTestCase):
 
         range_names = [
             # ("name", time_target)
-            ("Dense 1", 9e4),  # 93,230
-            ("Dense 1 grad", 1.9e5),  # 191,680
-            ("Dense 2", 9e4),  # 92,629
-            ("Dense 2 grad", 1.9e5),  # 193,426
-            ("Dense 3", 1e5),  # 103,867
-            ("Dense 3 grad", 2.0e5),  # 196,523
-            ("Dense 4", 9e4),  # 86,882
-            ("Dense 4 grad", 2.0e5),  # 204,076
-            ("Dense 5", 5e4),  # 49,689
-            ("Dense 5 grad", 1.7e5),  # 172,503
-            ("Dense Block", 8.7e5),  # 866,847
-            ("Dense Block grad", 1.02e6)  # 1,017,128
+            ("Dense 1", 1.0e5),  # 98,144
+            ("Dense 1 grad", 1.8e5),  # 180,291
+            ("Dense 2", 9e4),  # 86,186
+            ("Dense 2 grad", 1.9e5),  # 185,389
+            ("Dense 3", 7e4),  # 72,238
+            ("Dense 3 grad", 1.6e5),  # 156,226
+            ("Dense 4", 5e4),  # 54,122
+            ("Dense 4 grad", 1.6e5),  # 158,607
+            ("Dense 5", 4e4),  # 39,480
+            ("Dense 5 grad", 1.7e5),  # 165,014
+            ("Dense Block", 4.1e5),  # 408,626
+            ("Dense Block grad", 8.8e5)  # 884,339
         ]
 
         with self.open_db(TensorflowSessionTestCase.JOB_NAME) as conn:

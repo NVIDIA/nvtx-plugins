@@ -15,7 +15,7 @@ from contextlib import contextmanager
 
 
 __all__ = [
-    'CustomTestCase',
+    'NVTXBaseTest',
 ]
 
 # http://people.cs.pitt.edu/~alanjawi/cs449/code/shell/UnixSignals.htm
@@ -24,7 +24,7 @@ SIGKILL_CODE = 9
 SIGTERM_CODE = 15
 
 
-class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
+class NVTXBaseTest(unittest.TestCase, metaclass=ABCMeta):
 
     @abstractmethod
     def JOB_NAME(self):
@@ -79,7 +79,7 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
         modified_command = [
             'nsys',
             'profile',
-            '--delay=10',
+            '--delay=1',
             '--duration=30',
             '--sample=cpu',
             '--trace=nvtx,cuda',

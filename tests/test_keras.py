@@ -4,10 +4,13 @@
 import unittest
 import pytest
 
-from tests.base import CustomTestCase
+from tests.base import NVTXBaseTest
+from distutils.version import LooseVersion
+
+import tensorflow as tf
 
 
-class KerasTestCase(CustomTestCase):
+class KerasTestCase(NVTXBaseTest):
 
     JOB_NAME = "keras_example"
 
@@ -20,16 +23,16 @@ class KerasTestCase(CustomTestCase):
 
         range_names = [
             # ("name", time_target)
-            ("Dense 1", 2.4e5),  # 243,147
-            ("Dense 1 grad", 2.3e5),  # 228,901
-            ("Dense 2", 9e4),  # 90,982
-            ("Dense 2 grad", 3.6e5),  # 360,840
-            ("Dense 3", 1.0e5),  # 97,494
-            ("Dense 3 grad", 1.7e5),  # 170,699
-            ("Dense 4", 7e4),  # 67,857
-            ("Dense 4 grad", 1.8e5),  # 181,303
-            ("Dense 5", 7e4),  # 66,138
-            ("Dense 5 grad", 1.7e5)  # 173,618
+            ("Dense 1", 1.2e5),  # 120,996
+            ("Dense 1 grad", 1.2e5),  # 115,999
+            ("Dense 2", 6e4),  # 58,643
+            ("Dense 2 grad", 9e4),  # 90,279
+            ("Dense 3", 8e4),  # 80,368
+            ("Dense 3 grad", 1.1e5),  # 110,181
+            ("Dense 4", 5e4),  # 54,668
+            ("Dense 4 grad", 1.0e5),  # 95,431
+            ("Dense 5", 5e4),  # 51,937
+            ("Dense 5 grad", 1.8e5)  # 175,346
         ]
 
         with self.open_db(KerasTestCase.JOB_NAME) as conn:
@@ -56,6 +59,7 @@ class KerasTestCase(CustomTestCase):
                     self.assertGreaterEqual(count, reference_count - 1)
                     self.assertLessEqual(count, reference_count + 1)
 
+            # if LooseVersion(tf.__version__) >= LooseVersion("1.4.0"):
             count, _ = self.query_report(
                 conn,
                 range_name="Train",
