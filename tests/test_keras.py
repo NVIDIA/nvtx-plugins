@@ -21,19 +21,35 @@ class KerasTestCase(NVTXBaseTest):
     def test_report_is_compliant(self):
         reference_count = -1
 
-        range_names = [
-            # ("name", time_target)
-            ("Dense 1", 1.2e5),  # 120,996
-            ("Dense 1 grad", 1.2e5),  # 115,999
-            ("Dense 2", 6e4),  # 58,643
-            ("Dense 2 grad", 9e4),  # 90,279
-            ("Dense 3", 8e4),  # 80,368
-            ("Dense 3 grad", 1.1e5),  # 110,181
-            ("Dense 4", 5e4),  # 54,668
-            ("Dense 4 grad", 1.0e5),  # 95,431
-            ("Dense 5", 5e4),  # 51,937
-            ("Dense 5 grad", 1.8e5)  # 175,346
-        ]
+        if LooseVersion(tf.__version__) >= LooseVersion("2.0.0"):
+            range_names = [
+                # ("name", time_target)
+                ("Dense 1", 1.2e5),  # 120,996
+                ("Dense 1 grad", 1.2e5),  # 115,999
+                ("Dense 2", 6e4),  # 58,643
+                ("Dense 2 grad", 9e4),  # 90,279
+                ("Dense 3", 8e4),  # 80,368
+                ("Dense 3 grad", 1.1e5),  # 110,181
+                ("Dense 4", 5e4),  # 54,668
+                ("Dense 4 grad", 1.0e5),  # 95,431
+                ("Dense 5", 5e4),  # 51,937
+                ("Dense 5 grad", 1.8e5)  # 175,346
+            ]
+
+        else:
+            range_names = [
+                # ("name", time_target)
+                ("Dense 1", 2.7e5),  # 273,685
+                ("Dense 1 grad", 3.5e5),  # 347,366
+                ("Dense 2", 1.6e5),  # 161,556
+                ("Dense 2 grad", 3.0e5),  # 297,473
+                ("Dense 3", 1.5e5),  # 152,980
+                ("Dense 3 grad", 3.2e5),  # 315,244
+                ("Dense 4", 1.5e5),  # 150,286
+                ("Dense 4 grad", 3.3e5),  # 332,801
+                ("Dense 5", 7e4),  # 67,789
+                ("Dense 5 grad", 1.9e5)  # 185,972
+            ]
 
         with self.open_db(KerasTestCase.JOB_NAME) as conn:
 

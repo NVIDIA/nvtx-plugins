@@ -5,6 +5,9 @@ import unittest
 import pytest
 
 from tests.base import NVTXBaseTest
+from distutils.version import LooseVersion
+
+import tensorflow as tf
 
 
 class TensorflowSessionTestCase(NVTXBaseTest):
@@ -18,21 +21,39 @@ class TensorflowSessionTestCase(NVTXBaseTest):
     def test_report_is_compliant(self):
         reference_count = -1
 
-        range_names = [
-            # ("name", time_target)
-            ("Dense 1", 1.0e5),  # 98,144
-            ("Dense 1 grad", 1.8e5),  # 180,291
-            ("Dense 2", 9e4),  # 86,186
-            ("Dense 2 grad", 1.9e5),  # 185,389
-            ("Dense 3", 7e4),  # 72,238
-            ("Dense 3 grad", 1.6e5),  # 156,226
-            ("Dense 4", 5e4),  # 54,122
-            ("Dense 4 grad", 1.6e5),  # 158,607
-            ("Dense 5", 4e4),  # 39,480
-            ("Dense 5 grad", 1.7e5),  # 165,014
-            ("Dense Block", 4.1e5),  # 408,626
-            ("Dense Block grad", 8.8e5)  # 884,339
-        ]
+        if LooseVersion(tf.__version__) >= LooseVersion("2.0.0"):
+            range_names = [
+                # ("name", time_target)
+                ("Dense 1", 1.0e5),  # 98,144
+                ("Dense 1 grad", 1.8e5),  # 180,291
+                ("Dense 2", 9e4),  # 86,186
+                ("Dense 2 grad", 1.9e5),  # 185,389
+                ("Dense 3", 7e4),  # 72,238
+                ("Dense 3 grad", 1.6e5),  # 156,226
+                ("Dense 4", 5e4),  # 54,122
+                ("Dense 4 grad", 1.6e5),  # 158,607
+                ("Dense 5", 4e4),  # 39,480
+                ("Dense 5 grad", 1.7e5),  # 165,014
+                ("Dense Block", 4.1e5),  # 408,626
+                ("Dense Block grad", 8.8e5)  # 884,339
+            ]
+
+        else:
+            range_names = [
+                # ("name", time_target)
+                ("Dense 1", 1.3e5),  # 127,042
+                ("Dense 1 grad", 3.0e5),  # 304,562
+                ("Dense 2", 1.1e5),  # 108,889
+                ("Dense 2 grad", 2.2e5),  # 215,664
+                ("Dense 3", 1.0e5),  # 101,554
+                ("Dense 3 grad", 2.4e5),  # 236,500
+                ("Dense 4", 1.0e5),  # 99,070
+                ("Dense 4 grad", 2.3e5),  # 225,912
+                ("Dense 5", 5e4),  # 47,974
+                ("Dense 5 grad", 1.8e5),  # 184,018
+                ("Dense Block", 5.7e5),  # 565,927
+                ("Dense Block grad", 1.21e6)  # 1,210,117
+            ]
 
         with self.open_db(TensorflowSessionTestCase.JOB_NAME) as conn:
 
