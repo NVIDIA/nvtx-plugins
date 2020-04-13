@@ -3,6 +3,7 @@ recursive-include nvtx_plugins/ *.cu
 recursive-include nvtx_plugins/ *.h
 recursive-include nvtx_plugins/ *.hpp
 recursive-include nvtx_plugins/ *.py
+recursive-include nvtx_plugins/ *.gitkeep
 
 include *.lds
 include *.py

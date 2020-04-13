@@ -8,9 +8,10 @@ rm -rf build/
 rm -rf dist/
 rm -rf docs/_build/
 rm -rf .pytest_cache/
+rm -rf __pycache__/
 rm -rf .eggs/
 
-rm -rf nvtx_plugins/**/*.egg-info/
+rm -rf nvtx_plugins/python/nvtx_plugins.egg-info/
 
 for i in {1..10}
 do

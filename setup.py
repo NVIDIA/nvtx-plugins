@@ -205,8 +205,10 @@ setup(
         # Additional Setting
         'Environment :: Console',
         'Natural Language :: English',
+        'Operating System :: POSIX',
         'Operating System :: POSIX :: Linux',
     ],
+    platforms=["Linux"],
 
     cmdclass={
         'build_ext': custom_build_ext,
@@ -221,8 +223,9 @@ setup(
 
     # Contained modules and scripts.
     install_requires=install_requires,
+    setup_requires=install_requires,
+    tests_require=['pytest', 'pytest-runner'],
     extras_require=extras_require,
-    setup_requires=['pytest-runner'],
 
     zip_safe=False,
 
