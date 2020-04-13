@@ -45,6 +45,7 @@ RUN printf "\nContainer Tag: ${TF_CONTAINER_VERSION}\n\n" \
     && apt-get install -y git \
     && apt-get install -y g++-$(python -c "import tensorflow as tf; print(tf.version.COMPILER_VERSION[:3])") || true \
     && mkdir -p /dist/ && cd /dist/ \
+    && pip install -U --no-cache-dir setuptools \
     && if [[ ! -z "$GIT_REPOSITORY_URL" ]]; then \
         GIT_REPOSITORY_URL="${GIT_REPOSITORY_URL/git@github.com:/https://github.com/}" \
         && printf "\nGit Repository URL: ${GIT_REPOSITORY_URL}\n"; \
