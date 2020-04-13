@@ -8,6 +8,7 @@ rm -rf build/
 rm -rf dist/
 rm -rf docs/_build/
 rm -rf .pytest_cache/
+rm -rf .eggs/
 
 rm -rf nvtx_plugins/**/*.egg-info/
 
