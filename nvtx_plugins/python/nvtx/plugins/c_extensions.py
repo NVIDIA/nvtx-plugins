@@ -37,6 +37,11 @@ def collect_all_c_extensions():
     return [x for x in CustomExtension.get_instances()]
 
 
+def _get_nvtx_include_dir():
+    import nvtx_headers
+    return nvtx_headers.get_include_dir()
+
+
 tensorflow_nvtx_lib = TFExtension(
     name='nvtx.plugins.tf.lib.nvtx_ops',
     ###############
@@ -45,7 +50,7 @@ tensorflow_nvtx_lib = TFExtension(
     export_symbols=[],
     extra_compile_args=[],
     extra_link_args=[],
-    include_dirs=[],
+    include_dirs=[_get_nvtx_include_dir],
     language=None,
     libraries=[],
     library_dirs=[],

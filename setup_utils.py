@@ -473,7 +473,9 @@ def build_tf_extension(build_ext, ext, options):
 
     # Update HAVE_CUDA to mean that PyTorch supports CUDA.
     ext.define_macros = options['MACROS'] + ext.define_macros
-    ext.include_dirs = options['INCLUDES'] + ext.include_dirs
+    ext.include_dirs = options['INCLUDES'] + [
+        x() if callable(x) else x for x in ext.include_dirs
+    ]
 
     ext.sources = options['SOURCES'] + ext.sources
 
