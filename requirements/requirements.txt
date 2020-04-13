@@ -1,2 +1,2 @@
 wrapt>=1.12,<2.0
-nvtx-headers @ git+https://github.com/DEKHTIARJonathan/nvtx-headers@84b32564974324fc7ecf04350ddaf97069f203e0
+nvtx-headers @ git+https://github.com/DEKHTIARJonathan/nvtx-headers@cc0977ed7e864fbcfd1fb999d926ddf672001da1
