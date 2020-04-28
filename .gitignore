@@ -36,3 +36,7 @@ venv/
 
 **/*egg-info/
 
+
+NVIDIA_Nsight_Systems_Linux_2020.2.1.71.deb
+
+rebuild.sh

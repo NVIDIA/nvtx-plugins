@@ -38,8 +38,7 @@ from tensorflow.python.framework import load_library as _load_library
 from tensorflow.python.platform import resource_loader
 
 from nvtx.plugins.c_extensions_utils import TFExtension
-
-from nvtx.common.ext_utils import get_extension_relative_path
+from nvtx.plugins.common.ext_utils import get_extension_relative_path
 
 __all__ = ["load_library"]
 

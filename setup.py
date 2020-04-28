@@ -96,17 +96,13 @@ def force_clean_build_cache():
 
 
 def run_cmd(command):
-    ps = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    ps = subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
     return ps.communicate()[0].decode('utf-8').strip()
-
-
-def get_tf_pkgname():
-
-    for pkg_name in ["tensorflow-gpu", "tf-nightly-gpu"]:
-        if pkg_name in run_cmd("pip freeze | grep %s" % pkg_name):
-            return pkg_name
-
-    return "tensorflow"  # Default if not found
 
 
 def req_file(filename, folder="requirements"):
@@ -119,7 +115,7 @@ def req_file(filename, folder="requirements"):
 
 force_clean_build_cache()
 
-install_requires = req_file("requirements.txt") + [get_tf_pkgname()]
+install_requires = req_file("requirements.txt")
 extras_require = {
     'test': req_file("requirements_test.txt"),
 }
@@ -201,6 +197,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
 
         # Additional Setting
         'Environment :: Console',

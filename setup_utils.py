@@ -55,17 +55,19 @@ from distutils.version import LooseVersion
 
 from setuptools.command.build_ext import build_ext
 
-# Torch must be imported first
-try:
-    import torch
-    from torch.utils.cpp_extension import check_compiler_abi_compatibility
-except ModuleNotFoundError:
-    pass
+# Avoid loading Tensorflow or PyTorch during packaging.
+if "sdist" not in sys.argv:
+    # Torch must be imported first
+    try:
+        import torch
+        from torch.utils.cpp_extension import check_compiler_abi_compatibility
+    except ModuleNotFoundError:
+        pass
 
-try:
-    import tensorflow as tf
-except ModuleNotFoundError:
-    pass
+    try:
+        import tensorflow as tf
+    except ModuleNotFoundError:
+        pass
 
 __all__ = [
     "custom_build_ext",

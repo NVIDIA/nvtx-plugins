@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nvtx import nvtx_clib
+from nvtx.plugins import nvtx_clib
 
 # TODO(ahmadki): support domain names
 # TODO(ahmadki): move nvtx functionality to nvtx.plugins module ?
