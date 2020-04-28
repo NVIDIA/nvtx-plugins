@@ -39,6 +39,6 @@ NvtxRangeDescriptor NVTX_API start_range(
 
 void NVTX_API end_range(const nvtxRangeId_t range_id);
 
-}
+} // nvtx_markers
 
 #endif //NVTX_CUSTOM_MARKERS_H_
