@@ -34,21 +34,34 @@ from nvtx.plugins.package_info import __keywords__
 from nvtx.plugins.common.logger import Logger as _Logger
 logging = _Logger()
 
-# from nvtx.plugins.common.decorators.deprecated import deprecated
-#
-#
-# @deprecated(end_support_version="1.0.0", instructions='useless function, please remove')
-# def lol():
-#     pass
-#
-#
-# @deprecated(end_support_version="1.0.0", instructions='useless class, please remove')
-# class LOLClass():
-#     pass
-#
-#
-# class OKClass():
-#     @deprecated(end_support_version="1.0.0", instructions='useless method, please remove')
-#     def lolmethod(self):
-#         pass
+from nvtx.plugins.common.decorators import deprecated
+from nvtx.plugins.common.decorators import deprecated_argument
+from nvtx.plugins.common.decorators import deprecated_alias
+
+
+@deprecated(end_support_version="1.0.0", instructions='useless function, please remove')
+def lol():
+    pass
+
+
+@deprecated(end_support_version="1.0.0", instructions='useless class, please remove')
+class LOLClass():
+    pass
+
+
+class OKClass():
+    @deprecated(end_support_version="1.0.0", instructions='useless method, please remove')
+    def lolmethod(self):
+        pass
+
+
+@deprecated_argument(end_support_version="1.0.0", deprecated_args=["arg1"])
+def lolmethod():
+    pass
+
+@deprecated_alias(end_support_version="1.0.0", deprecated_aliases={"old": "new"})
+def lolmethod_alias(new):
+    print("new argument:", new)
+    pass
+
 
