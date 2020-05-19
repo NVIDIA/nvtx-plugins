@@ -17,7 +17,7 @@
 
 from nvtx.plugins import nvtx_clib
 
-# TODO(ahmadki): support domain names
+# TODO(ahmadki): support category names
 # TODO(ahmadki): move nvtx functionality to nvtx.plugins module ?
 
 

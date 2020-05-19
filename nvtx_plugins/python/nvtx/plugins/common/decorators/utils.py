@@ -57,15 +57,28 @@ def _add_deprecated_function_notice_to_docstring(doc, version, instructions):
     if instructions:
         deprecation_message = """
             .. warning::
-                **THIS FUNCTION IS DEPRECATED:** It will be removed after %s.
-                *Instructions for updating:* %s.
-        """ % ('version: %s' % version, instructions)
+                **THIS FUNCTION IS DEPRECATED:** It will be removed in {ver}.
+                *Instructions for updating:* {instructions}.
+        """.format(
+            ver=(
+                "version: `%s`" % version
+                if version is not None else
+                "a future version"
+            ),
+            instructions=instructions
+        )
 
     else:
         deprecation_message = """
             .. warning::
-                **THIS FUNCTION IS DEPRECATED:** It will be removed after %s.
-        """ % ('version: %s' % version)
+                **THIS FUNCTION IS DEPRECATED:** It will be removed in {ver}.
+        """.format(
+            ver=(
+                "version: `%s`" % version
+                if version is not None else
+                "a future version"
+            )
+        )
 
     main_text = [deprecation_message]
 

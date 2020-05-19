@@ -39,29 +39,27 @@ from nvtx.plugins.common.decorators import deprecated_argument
 from nvtx.plugins.common.decorators import deprecated_alias
 
 
-@deprecated(end_support_version="1.0.0", instructions='useless function, please remove')
+@deprecated(instructions='useless function, please remove')
 def lol():
     pass
 
 
-@deprecated(end_support_version="1.0.0", instructions='useless class, please remove')
-class LOLClass():
+@deprecated(instructions='useless class, please remove')
+class LOLClass(object):
     pass
 
 
-class OKClass():
-    @deprecated(end_support_version="1.0.0", instructions='useless method, please remove')
+class OKClass(object):
+    @deprecated(instructions='useless method, please remove')
     def lolmethod(self):
         pass
 
 
-@deprecated_argument(end_support_version="1.0.0", deprecated_args=["arg1"])
-def lolmethod():
+@deprecated_argument(deprecated_args=["arg1"])
+def lolfunc():
     pass
 
-@deprecated_alias(end_support_version="1.0.0", deprecated_aliases={"old": "new"})
-def lolmethod_alias(new):
+
+@deprecated_alias(deprecated_aliases={"old": "new"})
+def lolfunc_alias(new):
     print("new argument:", new)
-    pass
-
-

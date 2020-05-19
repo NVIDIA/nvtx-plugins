@@ -19,6 +19,8 @@ import wrapt
 import tensorflow as tf
 
 from tensorflow.python.framework import ops
+
+from nvtx.plugins.common.decorators import deprecated_alias
 from nvtx.plugins.tf import nvtx_tf_ops
 
 __all__ = ['start', 'end', 'trace']
@@ -59,8 +61,15 @@ def _nvtx_end_grad(op, grad, null_grad):
     return [grad, marker_id, domain_handle, None, None]
 
 
-def start(inputs, message, domain_name=None,
-          grad_message=None, grad_domain_name=None,
+@deprecated_alias(
+    deprecated_aliases={
+        "domain_name": "category",
+        "grad_message": "backward_message",
+        "grad_domain_name": "backward_category"
+    }
+)
+def start(inputs, message, category="forward",
+          backward_message=None, backward_category="backward",
           trainable=False, enabled=True, name=None):
     """An identity operation with a side effect of opening an NVTX marker.
 
@@ -82,13 +91,14 @@ def start(inputs, message, domain_name=None,
     Arguments:
         inputs: A ``Tensor`` object that is passed to ``output``.
         message: A ``string`` message to be associated with this marker.
-        domain_name: An optional ``string`` domain name to be associated with
-            this marker. If not provided the default NVTX domain will be used.
-        grad_message: An optional ``string`` message to be associated with
+        category: An optional ``string`` NVTX category name to be
+            associated with this marker. If not provided the default NVTX
+            `forward` category will be used.
+        backward_message: An optional ``string`` message to be associated with
             the op gradient. If not provided ``message`` will be used.
-        grad_domain_name: An optional ``string`` domain name to be associated
-            with this marker gradient. If not provided ``domain_name`` will
-            be used.
+        backward_category: An optional ``string`` NVTX category name to be
+            associated with this marker gradient. If not provided the default
+            NVTX `backward` category will be used.
         trainable: ``bool``, if ``True`` will make this op
             trainable. Used when this is the first operation in the graph to
             prevent an open ended marker during gradient calculation.
@@ -98,35 +108,41 @@ def start(inputs, message, domain_name=None,
     Returns:
         ``tuple``:
         - output: The inputs ``Tensor``.
-        - nvtx_context: ``list``, NVTX context associated with this op and passed to :func:`ops.end <end>`. ``None``  if ``enabled=False``.
+        - nvtx_context: ``list``, NVTX context associated with this op and
+        passed to :func:`ops.end <end>`. ``None``  if ``enabled=False``.
 
     """
     if not enabled:
         return inputs, None
 
-    domain_name = domain_name or ''
-    grad_message = grad_message or message
-    grad_domain_name = grad_domain_name or domain_name or ''
+    backward_message = backward_message or message
 
     null_input = 1.
 
     if trainable:
         with tf.compat.v1.variable_scope("nvtx", reuse=tf.compat.v1.AUTO_REUSE):
-            null_input = tf.compat.v1.get_variable('null_input', shape=(),
-                                                   dtype=tf.float32,
-                                                   initializer=tf.zeros_initializer,
-                                                   trainable=True)
+            null_input = tf.compat.v1.get_variable(
+                'null_input',
+                shape=(),
+                dtype=tf.float32,
+                initializer=tf.zeros_initializer,
+                trainable=True
+            )
 
     inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
 
     inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
-        inputs=inputs, null_input=null_input,
-        message=message, domain_name=domain_name, name=name)
+        inputs=inputs,
+        null_input=null_input,
+        message=message,
+        domain_name=category,
+        name=name
+    )
 
     if should_unstack:
         inputs = tf.unstack(inputs, axis=0)
 
-    return inputs, (marker_id, domain_handle, grad_message, grad_domain_name)
+    return inputs, (marker_id, domain_handle, backward_message, backward_category)
 
 
 def end(inputs, nvtx_context, name=None):
@@ -160,13 +176,17 @@ def end(inputs, nvtx_context, name=None):
     if nvtx_context is None:
         return inputs
 
-    marker_id, domain_handle, grad_message, grad_domain_name = nvtx_context
+    marker_id, domain_handle, backward_message, backward_category = nvtx_context
 
     inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
 
-    output, null_output = nvtx_tf_ops.nvtx_end(inputs=inputs,
-        marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=grad_message, grad_domain_name=grad_domain_name, name=name
+    output, null_output = nvtx_tf_ops.nvtx_end(
+        inputs=inputs,
+        marker_id=marker_id,
+        domain_handle=domain_handle,
+        grad_message=backward_message,
+        grad_domain_name=backward_category,
+        name=name
     )
 
     if should_unstack:
@@ -175,8 +195,15 @@ def end(inputs, nvtx_context, name=None):
     return output
 
 
-def trace(message, domain_name=None,
-          grad_message=None, grad_domain_name=None,
+@deprecated_alias(
+    deprecated_aliases={
+        "domain_name": "category",
+        "grad_message": "backward_message",
+        "grad_domain_name": "backward_category"
+    }
+)
+def trace(message, category=None,
+          backward_message=None, backward_category=None,
           trainable=False, enabled=True, name=None):
     """An identity function decorator with a side effect of adding NVTX marker.
 
@@ -187,13 +214,14 @@ def trace(message, domain_name=None,
 
     Arguments:
         message: A ``string`` message to be associated with this marker.
-        domain_name: An optional ``string`` domain name to be associated with
-            this marker. If not provided the default NVTX domain will be used.
-        grad_message: An optional ``string`` message to be associated with
+        category: An optional ``string`` NVTX category name to be
+            associated with this marker. If not provided the default NVTX
+            `forward` category will be used.
+        backward_message: An optional ``string`` message to be associated with
             the op gradient. If not provided `message` will be used.
-        grad_domain_name: An optional ``string`` domain name to be associated
-            with this marker gradient. If not provided ``domain_name`` will
-            be used.
+        backward_category: An optional ``string`` NVTX category name to be
+            associated with this marker gradient. If not provided the default
+            NVTX `backward` category will be used.
         trainable: ``bool``, if ``True`` will make this op
             trainable. Used when this is the first operation in the graph to
             prevent an open ended marker during gradient calculation.
@@ -214,10 +242,15 @@ def trace(message, domain_name=None,
         start_name = '{}_start'.format(name) if name else None
         end_name = '{}_end'.format(name) if name else None
 
-        inputs, nvtx_context = start(inputs=inputs,
-            message=message, domain_name=domain_name,
-            grad_message=grad_message, grad_domain_name=grad_domain_name,
-            enabled=enabled, trainable=trainable, name=start_name
+        inputs, nvtx_context = start(
+            inputs=inputs,
+            message=message,
+            category=category,
+            backward_message=backward_message,
+            backward_category=backward_category,
+            enabled=enabled,
+            trainable=trainable,
+            name=start_name
         )
 
         if should_unstack:

@@ -24,7 +24,7 @@ _PRINT_DEPRECATION_WARNINGS = True
 _PRINTED_WARNING = {}
 
 
-def deprecated(wrapped=None, end_support_version=None, instructions='',
+def deprecated(wrapped=None, instructions='', end_support_version=None,
                warn_once=True):
     if wrapped is None:
         return functools.partial(
@@ -37,7 +37,10 @@ def deprecated(wrapped=None, end_support_version=None, instructions='',
     @wrapt.decorator
     def wrapper(wrapped, instance=None, args=None, kwargs=None):
 
-        validate_deprecation_args(end_support_version, instructions)
+        validate_deprecation_args(
+            version=end_support_version,
+            instructions=instructions
+        )
 
         if _PRINT_DEPRECATION_WARNINGS:
 
@@ -56,13 +59,17 @@ def deprecated(wrapped=None, end_support_version=None, instructions='',
 
                 logging.warning(
                     '{obj_type}: `{module}.{name}` (in file: {file}) is '
-                    'deprecated and will be removed in version: `{version}`.\n'
+                    'deprecated and will be removed in {version}.\n'
                     'Instructions for updating: {instructions}\n'.format(
                         obj_type=obj_type,
                         module=wrapped.__module__,
                         name=class_or_func_name,
                         file=inspect.getsourcefile(wrapped),
-                        version=end_support_version,
+                        version=(
+                            "version: `{version}`".format(end_support_version)
+                            if end_support_version is not None else
+                            "a future version"
+                        ),
                         instructions=instructions
                     )
                 )
@@ -85,18 +92,22 @@ def deprecated(wrapped=None, end_support_version=None, instructions='',
     return decorated
 
 
-def _deprecated_argument(end_support_version, deprecated_args, is_renaming):
+def _deprecated_argument(deprecated_args, end_support_version, is_renaming):
     def rename_kwargs(kwargs, func_name):
 
         for arg in deprecated_args:
 
             if arg in kwargs:
                 msg = "Deprecated - Inside: `{fn}()`, the argument `{arg}` " \
-                      "has been deprecated and will be removed in version " \
-                      "`{ver}`.".format(
+                      "has been deprecated and will be removed in " \
+                      "{version}.".format(
                     fn=func_name,
                     arg=arg,
-                    ver=end_support_version
+                    version=(
+                        "version: `{version}`".format(end_support_version)
+                        if end_support_version is not None else
+                        "a future version"
+                    )
                 )
 
                 if is_renaming:
@@ -134,7 +145,7 @@ def _deprecated_argument(end_support_version, deprecated_args, is_renaming):
     return deco
 
 
-def deprecated_argument(end_support_version, deprecated_args=None):
+def deprecated_argument(deprecated_args, end_support_version=None):
     if (
             deprecated_args is None or
             not isinstance(deprecated_args, (list, tuple)) or
@@ -145,13 +156,13 @@ def deprecated_argument(end_support_version, deprecated_args=None):
                          "strings, received: %s" % deprecated_args)
 
     return _deprecated_argument(
-        end_support_version,
-        deprecated_args,
+        deprecated_args=deprecated_args,
+        end_support_version=end_support_version,
         is_renaming=False
     )
 
 
-def deprecated_alias(end_support_version, deprecated_aliases=None):
+def deprecated_alias(deprecated_aliases, end_support_version=None):
     if (
             deprecated_aliases is None or
             not isinstance(deprecated_aliases, dict) or
@@ -165,7 +176,7 @@ def deprecated_alias(end_support_version, deprecated_aliases=None):
                          "string: string, received: %s" % deprecated_aliases)
 
     return _deprecated_argument(
-        end_support_version,
-        deprecated_aliases,
+        deprecated_args=deprecated_aliases,
+        end_support_version=end_support_version,
         is_renaming=True
     )
