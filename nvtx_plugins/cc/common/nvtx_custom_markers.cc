@@ -7,7 +7,6 @@ namespace detail {
 
 inline uint32_t hash_str_uint32(const std::string& str) {
     uint32_t hash = 0x811c9dc5;
-    // uint32_t prime = 0x1000193;
     uint32_t prime = 0x6C0B13B5;
 
     for(unsigned int i = 0; i < str.size(); ++i) {
