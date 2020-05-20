@@ -59,10 +59,33 @@ class TensorflowSessionTestCase(NVTXBaseTest):
 
         with self.open_db(TensorflowSessionTestCase.JOB_NAME) as conn:
 
+            forward_category_id = self.get_category_id(conn, "Forward")
+            backward_category_id = self.get_category_id(conn, "Gradient")
+
+            forward_block_category_id = self.get_category_id(
+                conn, "Trace_Forward"
+            )
+            backward_block_category_id = self.get_category_id(
+                conn, "Trace_Gradient"
+            )
+
             for range_name, time_target in range_names:
 
+                if "block" in range_name.lower():
+                    category_id_target = (
+                        forward_block_category_id
+                        if "grad" not in range_name else
+                        backward_block_category_id
+                    )
+                else:
+                    category_id_target = (
+                        forward_category_id
+                        if "grad" not in range_name else
+                        backward_category_id
+                    )
+
                 with self.catch_assert_error(range_name):
-                    count, avg_exec_time = self.query_report(
+                    count, avg_exec_time, category_id = self.query_report(
                         conn,
                         range_name=range_name
                     )
@@ -70,9 +93,12 @@ class TensorflowSessionTestCase(NVTXBaseTest):
                     self.assertGreaterEqual(
                         avg_exec_time, time_target / TIMING_THRESHOLD
                     )
+
                     self.assertLessEqual(
                         avg_exec_time, time_target * TIMING_THRESHOLD
                     )
+
+                    self.assertEqual(category_id, category_id_target)
 
                     if reference_count < 0:
                         # At least 500 steps should be processed
@@ -85,16 +111,18 @@ class TensorflowSessionTestCase(NVTXBaseTest):
                     self.assertGreaterEqual(count, reference_count - 1)
                     self.assertLessEqual(count, reference_count + 1)
 
-            count, _ = self.query_report(
+            count, _, category_id = self.query_report(
                 conn,
                 range_name="Train",
                 filter_negative_start=False
             )
             self.assertEqual(count, 1)
+            self.assertIsNone(category_id)
 
-            count, _ = self.query_report(conn, range_name="step %")
+            count, _, category_id = self.query_report(conn, range_name="step %")
             self.assertGreaterEqual(count, reference_count - 1)
             self.assertLessEqual(count, reference_count + 1)
+            self.assertIsNone(category_id)
 
 
 if __name__ == '__main__':

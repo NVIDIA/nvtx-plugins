@@ -57,39 +57,67 @@ def get_dataset(batch_size):
 
 
 # Option 1: use decorators
-@nvtx_tf.ops.trace(message='Dense Block', grad_message='Dense Block grad',
-                   domain_name='Forward', grad_domain_name='Gradient',
-                   enabled=ENABLE_NVTX, trainable=True)
+@nvtx_tf.ops.trace(message='Dense Block',
+                   grad_message='Dense Block grad',
+                   domain_name='Trace_Forward',
+                   grad_domain_name='Trace_Gradient',
+                   enabled=ENABLE_NVTX,
+                   trainable=True)
 def DenseBinaryClassificationNet(inputs):
     x = inputs
     x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 1',
         grad_message='Dense 1 grad', domain_name='Forward',
         grad_domain_name='Gradient', trainable=True, enabled=ENABLE_NVTX)
-    x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_1')
+    x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense1')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 2', grad_message='Dense 2 grad',
-        domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_2')
+    x, nvtx_context = nvtx_tf.ops.start(
+        x,
+        message='Dense 2',
+        grad_message='Dense 2 grad',
+        domain_name='Forward',
+        grad_domain_name='Gradient',
+        enabled=ENABLE_NVTX
+    )
+    x = tf.compat.v1.layers.dense(x, 1024, activation=tf.nn.relu, name='dense2')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 3', grad_message='Dense 3 grad',
-        domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense_3')
+    x, nvtx_context = nvtx_tf.ops.start(
+        x,
+        message='Dense 3',
+        grad_message='Dense 3 grad',
+        domain_name='Forward',
+        grad_domain_name='Gradient',
+        enabled=ENABLE_NVTX
+    )
+    x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense3')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 4', grad_message='Dense 4 grad',
-        domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense_4')
+    x, nvtx_context = nvtx_tf.ops.start(
+        x,
+        message='Dense 4',
+        grad_message='Dense 4 grad',
+        domain_name='Forward',
+        grad_domain_name='Gradient',
+        enabled=ENABLE_NVTX
+    )
+    x = tf.compat.v1.layers.dense(x, 512, activation=tf.nn.relu, name='dense4')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
-    x, nvtx_context = nvtx_tf.ops.start(x, message='Dense 5', grad_message='Dense 5 grad',
-        domain_name='Forward', grad_domain_name='Gradient', enabled=ENABLE_NVTX)
-    x = tf.compat.v1.layers.dense(x, 1, activation=None, name='dense_5')
+    x, nvtx_context = nvtx_tf.ops.start(
+        x,
+        message='Dense 5',
+        grad_message='Dense 5 grad',
+        domain_name='Forward',
+        grad_domain_name='Gradient',
+        enabled=ENABLE_NVTX
+    )
+    x = tf.compat.v1.layers.dense(x, 1, activation=None, name='dense5')
     x = nvtx_tf.ops.end(x, nvtx_context)
 
     predictions = x
     return predictions
+
 
 if __name__ == "__main__":
 
@@ -100,11 +128,24 @@ if __name__ == "__main__":
     features, labels = iterator.get_next()
 
     logits = DenseBinaryClassificationNet(inputs=features)
-    loss = tf.math.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels))
-    acc = tf.math.reduce_mean(tf.compat.v1.metrics.accuracy(labels=labels, predictions=tf.round(tf.nn.sigmoid(logits))))
-    optimizer = tf.compat.v1.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9, use_nesterov=True).minimize(loss)
+    loss = tf.math.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+        logits=logits,
+        labels=labels
+    ))
+    acc = tf.math.reduce_mean(tf.compat.v1.metrics.accuracy(
+        labels=labels,
+        predictions=tf.round(tf.nn.sigmoid(logits))
+    ))
+    optimizer = tf.compat.v1.train.MomentumOptimizer(
+        learning_rate=0.01,
+        momentum=0.9,
+        use_nesterov=True
+    )
 
-    # Initialize variables. local variables are needed to be initialized for tf.metrics.*
+    train_op = optimizer.minimize(loss)
+
+    # Initialize variables. local variables are needed to be initialized
+    # for tf.metrics.*
     init_g = tf.compat.v1.global_variables_initializer()
     init_l = tf.compat.v1.local_variables_initializer()
 
@@ -116,7 +157,7 @@ if __name__ == "__main__":
 
         # Run graph
         for step in range(TRAINING_STEPS):
-            _, loss_, acc_ = sess.run([optimizer, loss, acc])
+            _, loss_, acc_ = sess.run([train_op, loss, acc])
 
             if step % 100 == 0:
                 print('Step: %04d, loss=%f acc=%f' % (step, loss_, acc_))

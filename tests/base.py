@@ -43,7 +43,6 @@ class NVTXBaseTest(unittest.TestCase, metaclass=ABCMeta):
                 )
             ).with_traceback(sys.exc_info()[2])
 
-
     def run_command(self, job_name):
 
         for ext in ["qdrep", "sqlite"]:
@@ -58,16 +57,16 @@ class NVTXBaseTest(unittest.TestCase, metaclass=ABCMeta):
             command_proc = subprocess.Popen(cmd)
             return_code = command_proc.wait()
 
-            if command_proc.returncode not in [SUCCESS_CODE, SIGKILL_CODE, SIGTERM_CODE]:
+            if return_code not in [SUCCESS_CODE, SIGKILL_CODE, SIGTERM_CODE]:
                 sys.tracebacklimit = 0
                 # stdout, stderr = command_proc.stdout, command_proc.stderr
                 stdout, stderr = command_proc.communicate()
                 raise RuntimeError(
-                    "\n##################################################\n"
+                    "\n################################################\n"
                     "[*] STDOUT:{error_stdout}\n"
                     "[*] STERR:{error_stderr}\n"
                     "[*] command launched: `{command}`\n"
-                    "##################################################\n".format(
+                    "################################################\n".format(
                         error_stdout=stdout.decode("utf-8"),
                         error_stderr=stderr.decode("utf-8"),
                         command=" ".join(cmd)
@@ -125,15 +124,17 @@ class NVTXBaseTest(unittest.TestCase, metaclass=ABCMeta):
 
         conn.close()
 
-    def query_report(self, conn, range_name, filter_negative_start=True):
+    @staticmethod
+    def query_report(conn, range_name, filter_negative_start=True):
 
         filter_negative_start_query = "AND `start` > 0 "
 
         cur = conn.cursor()
         cur.execute(
             "SELECT "
-                "count(*),  "
-                "avg(`end` - `start`) as `avg_exec_time` "
+                "count(*), "
+                "avg(`end` - `start`) as `avg_exec_time`, "
+                "`category`"
             "FROM NVTX_EVENTS "
             "WHERE "
                 "`text` LIKE '{range_name}' "
@@ -148,3 +149,18 @@ class NVTXBaseTest(unittest.TestCase, metaclass=ABCMeta):
         )
 
         return cur.fetchone()
+
+    @staticmethod
+    def get_category_id(conn, category_name):
+
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT "
+                "`category` "
+            "FROM NVTX_EVENTS "
+            "WHERE "
+                "`text` = '{category_name}' "
+                "AND `eventType` = 33".format(category_name=category_name)
+        )
+
+        return cur.fetchone()[0]

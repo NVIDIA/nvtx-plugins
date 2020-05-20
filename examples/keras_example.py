@@ -65,31 +65,31 @@ def DenseBinaryClassificationNet(input_shape=(8,)):
                                         trainable=True)(x)
     x = Dense(1024, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 1 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id, domain_id])
 
     x, marker_id, domain_id = NVTXStart(message='Dense 2',
                                         domain_name='forward')(x)
     x = Dense(1024, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 2 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id, domain_id])
 
     x, marker_id, domain_id = NVTXStart(message='Dense 3',
                                         domain_name='forward')(x)
     x = Dense(512, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 3 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id, domain_id])
 
     x, marker_id, domain_id = NVTXStart(message='Dense 4',
                                         domain_name='forward')(x)
     x = Dense(512, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 4 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id, domain_id])
 
     x, marker_id, domain_id = NVTXStart(message='Dense 5',
                                         domain_name='forward')(x)
     x = Dense(1, activation='sigmoid')(x)
     x = NVTXEnd(grad_message='Dense 5 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id, domain_id])
 
     predictions = x
     model = Model(inputs=inputs, outputs=predictions)
