@@ -25,7 +25,7 @@ REGISTER_OP("NvtxStart")
     .Input("inputs: T")
     .Input("null_input: float32")
     .Input("message: string")
-    .Input("domain_name: string")
+    .Input("category_name: string")
     .Output("output: T")
     .Output("marker_id: int64")
     .Output("domain_handle: int64")
@@ -49,7 +49,7 @@ Arguments
     null_input: A `float32 Tensor` object used as a trick to force gradient
                 calculation. The tesnor is not used inside the op.
     message: A `String` message associated with this op.
-    domain_name: A `String` domain name associated with this op.
+    category_name: A `String` domain name associated with this op.
 
 Output
     output: The input `Tensor` passed to the output.
@@ -62,7 +62,7 @@ REGISTER_OP("NvtxEnd")
     .Input("marker_id: int64")
     .Input("domain_handle: int64")
     .Input("grad_message: string")
-    .Input("grad_domain_name: string")
+    .Input("grad_category_name: string")
     .Output("output: T")
     .Output("null_output: float32")
     .Attr("T: type")
@@ -84,7 +84,7 @@ Arguments
     marker_id: An NVTX marker id that is recived from `NvtxStart`.
     domain_handle: An NVTX domain handler that is recived from `NvtxStart`.
     grad_message: A `String` message associated with this op gradient.
-    grad_domain_name: A `String` domain name associated with this op gradient.
+    grad_category_name: A `String` domain name associated with this op gradient.
 
 Output
     output: The input `Tensor` passed to the output.

@@ -42,22 +42,29 @@ def _maybe_convert_list_to_tensor(inputs):
 
 @ops.RegisterGradient('NvtxStart')
 def _nvtx_start_grad(op, grad, marker_id, domain_handle):
-    # grad_message and grad_domain_name are not used
+    # grad_message and grad_category_name are not used
     if not isinstance(marker_id, tf.Tensor) and marker_id is None:
         raise RuntimeError('Error in nvtx range %s. '
                            'Make sure all nvtx ranges are closed' % op.name)
 
-    grad, null_grad = nvtx_tf_ops.nvtx_end(inputs=grad,
-        marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
+    grad, null_grad = nvtx_tf_ops.nvtx_end(
+        inputs=grad,
+        marker_id=marker_id,
+        domain_handle=domain_handle,
+        grad_message=op.inputs[2],
+        grad_category_name=op.inputs[3]
+    )
     return [grad, null_grad, None, None]
 
 
 @ops.RegisterGradient('NvtxEnd')
 def _nvtx_end_grad(op, grad, null_grad):
     grad, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
-        inputs=grad, null_input=1.,
-        message=op.inputs[3], domain_name=op.inputs[4])
+        inputs=grad,
+        null_input=1.,
+        message=op.inputs[3],
+        category_name=op.inputs[4]
+    )
     return [grad, marker_id, domain_handle, None, None]
 
 
@@ -82,7 +89,7 @@ def start(inputs, message, category="forward",
         .. code-block:: python
 
             x, nvtx_context = nvtx.plugins.tf.ops.start(x, message='Dense 1-3',
-                domain_name='Forward', grad_domain_name='Gradient')
+                category_name='Forward', grad_category_name='Gradient')
             x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_1')
             x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_2')
             x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_3')
@@ -135,7 +142,7 @@ def start(inputs, message, category="forward",
         inputs=inputs,
         null_input=null_input,
         message=message,
-        domain_name=category,
+        category_name=category,
         name=name
     )
 
@@ -157,7 +164,7 @@ def end(inputs, nvtx_context, name=None):
         .. code-block:: python
 
             x, nvtx_context = nvtx.plugins.tf.ops.start(x, message='Dense 1-3',
-                domain_name='Forward', grad_domain_name='Gradient')
+                category_name='Forward', grad_category_name='Gradient')
             x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_1')
             x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_2')
             x = tf.layers.dense(x, 1024, activation=tf.nn.relu, name='dense_3')
@@ -185,7 +192,7 @@ def end(inputs, nvtx_context, name=None):
         marker_id=marker_id,
         domain_handle=domain_handle,
         grad_message=backward_message,
-        grad_domain_name=backward_category,
+        grad_category_name=backward_category,
         name=name
     )
 

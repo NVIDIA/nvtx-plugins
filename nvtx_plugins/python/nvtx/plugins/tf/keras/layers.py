@@ -19,7 +19,9 @@
 """
 
 from tensorflow.keras.layers import Layer
+
 from nvtx.plugins.tf.ops import nvtx_tf_ops
+from nvtx.plugins.common.decorators import deprecated_alias
 
 
 class NVTXStart(Layer):
@@ -34,14 +36,14 @@ class NVTXStart(Layer):
         .. code-block:: python
 
             x, marker_id, domain_id = NVTXStart(message='Dense',
-                                                domain_name='forward')(x)
+                                                category_name='forward')(x)
             x = Dense(1024, activation='relu')(x)
             x = NVTXEnd(grad_message='Dense grad',
-                        grad_domain_name='backwards')([x, marker_id, domain_id])
+                        grad_category_name='backwards')([x, marker_id, domain_id])
 
     Arguments:
         message: A ``string`` message to be associated with this layer.
-        domain_name: An optional ``string`` domain name to be associated with
+        category_name: An optional ``string`` domain name to be associated with
             this layer. If not provided the default NVTX domain will be used.
         trainable: ``bool``, if ``True`` will make this layer trainable.
             Used when this is the first layer in the graph to
@@ -59,24 +61,31 @@ class NVTXStart(Layer):
 
     """
 
-    def __init__(self, message, domain_name=None,
-                 trainable=False, **kwargs):
+    @deprecated_alias(deprecated_aliases={"domain_name": "category"})
+    def __init__(self, message, category=None, trainable=False, **kwargs):
         super(NVTXStart, self).__init__(**kwargs)
         self.message = message
-        self.domain_name = domain_name or ''
+        self.category = category or ''
         self.trainable = trainable
 
     def build(self, input_shape):
         self.null_input = 1.
         if self.trainable:
-            self.null_input = self.add_weight(name='null_input', shape=(),
-                                              trainable=True, dtype='float32')
+            self.null_input = self.add_weight(
+                name='null_input',
+                shape=(),
+                trainable=True,
+                dtype='float32'
+            )
         super(NVTXStart, self).build(input_shape)
 
     def call(self, x):
-        x, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(inputs=x,
-            message=self.message, domain_name=self.domain_name,
-            null_input=self.null_input)
+        x, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+            inputs=x,
+            message=self.message,
+            category_name=self.category,
+            null_input=self.null_input
+        )
         return [x, marker_id, domain_handle]
 
     def compute_output_shape(self, input_shape):
@@ -95,15 +104,15 @@ class NVTXEnd(Layer):
         .. code-block:: python
 
             x, marker_id, domain_id = NVTXStart(message='Dense',
-                                                domain_name='forward')(x)
+                                                category_name='forward')(x)
             x = Dense(1024, activation='relu')(x)
             x = NVTXEnd(grad_message='Dense grad',
-                        grad_domain_name='backwards')([x, marker_id, domain_id])
+                        grad_category_name='backwards')([x, marker_id, domain_id])
 
     Arguments:
         grad_message: An optional ``string`` message to be associated with
             the op gradient. If not provided an empty message will be used.
-        grad_domain_name: An optional ``string`` domain name to be associated
+        grad_category_name: An optional ``string`` domain name to be associated
             with this marker gradient. If not provided the default domain name
             will be used.
         name: An optional ``string`` name for the layer.
@@ -119,10 +128,16 @@ class NVTXEnd(Layer):
 
     """
 
-    def __init__(self, grad_message=None, grad_domain_name=None, **kwargs):
+    @deprecated_alias(
+        deprecated_aliases={
+            "grad_message": "backward_message",
+            "grad_domain_name": "backward_category"
+        }
+    )
+    def __init__(self, backward_message=None, backward_category=None, **kwargs):
         super(NVTXEnd, self).__init__(**kwargs)
-        self.grad_message = grad_message or ''
-        self.grad_domain_name = grad_domain_name or ''
+        self.backward_message = backward_message or ''
+        self.backward_category = backward_category or ''
 
     def build(self, input_shape):
         super(NVTXEnd, self).build(input_shape)
@@ -130,10 +145,13 @@ class NVTXEnd(Layer):
     def call(self, x):
         assert isinstance(x, list) and (len(x) == 3)
         inputs, marker_id, domain_handle = x
-        output, _ = nvtx_tf_ops.nvtx_end(inputs=inputs, marker_id=marker_id,
-                                         domain_handle=domain_handle,
-                                         grad_message=self.grad_message,
-                                         grad_domain_name=self.grad_domain_name)
+        output, _ = nvtx_tf_ops.nvtx_end(
+            inputs=inputs,
+            marker_id=marker_id,
+            domain_handle=domain_handle,
+            grad_message=self.backward_message,
+            grad_category_name=self.backward_category
+        )
         return output
 
     def compute_output_shape(self, input_shape):

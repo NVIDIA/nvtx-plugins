@@ -39,29 +39,29 @@ class NvtxStartOp : public OpKernel {
       context->set_output(0, context->input(0));
     }
 
-    // Inputs 1,2: message and domain_name
-    const Tensor *message_t, *domain_t;
+    // Inputs 1,2: message and category_name
+    const Tensor *message_t, *category_t;
     OP_REQUIRES_OK(context, context->input("message", &message_t));
     OP_REQUIRES(context, TensorShapeUtils::IsScalar(message_t->shape()),
                 errors::InvalidArgument("message must be scalar, but received ",
                                         message_t->shape().DebugString()));
-    OP_REQUIRES_OK(context, context->input("domain_name", &domain_t));
-    OP_REQUIRES(context, TensorShapeUtils::IsScalar(domain_t->shape()),
-                errors::InvalidArgument("domain_name must be scalar, ",
+    OP_REQUIRES_OK(context, context->input("category_name", &category_t));
+    OP_REQUIRES(context, TensorShapeUtils::IsScalar(category_t->shape()),
+                errors::InvalidArgument("category_name must be scalar, ",
                                         "but received ",
-                                        domain_t->shape().DebugString()));
+                                        category_t->shape().DebugString()));
 
 #if TF_MAJOR_VERSION > 2 || (TF_MAJOR_VERSION == 2 && TF_MINOR_VERSION >= 2)
     const string message = message_t->flat<tstring>()(0);
-    const string domain_name = domain_t->flat<tstring>()(0);
+    const string category_name = category_t->flat<tstring>()(0);
 #else
     const string message = message_t->flat<std::string>()(0);
-    const string domain_name = domain_t->flat<std::string>()(0);
+    const string category_name = category_t->flat<std::string>()(0);
 #endif
 
     // create nvtx marker
     const nvtx_markers::NvtxRangeDescriptor range_desc =
-      nvtx_markers::start_range(message.c_str(), domain_name.c_str());
+      nvtx_markers::start_range(message.c_str(), category_name.c_str());
 
     const nvtxRangeId_t marker_id = range_desc.range_id;
     const nvtxDomainHandle_t domain_handle = range_desc.domain_handle;
@@ -100,10 +100,10 @@ class NvtxEndOp : public OpKernel {
     }
 
     // Close NVTX range
-    const Tensor *marker_t, *domain_t;
+    const Tensor *marker_t, *category_t;
 
     OP_REQUIRES_OK(context, context->input("marker_id", &marker_t));
-    OP_REQUIRES_OK(context, context->input("domain_handle", &domain_t));
+    OP_REQUIRES_OK(context, context->input("domain_handle", &category_t));
 
     auto marker_id = marker_t->scalar<int64>()();
     auto domain_handle = reinterpret_cast<nvtxDomainHandle_t>(
@@ -127,7 +127,7 @@ class NvtxEndOp : public OpKernel {
   REGISTER_KERNEL_BUILDER(Name("NvtxStart")                       \
                               .Device(DEVICE_GPU)                 \
                               .HostMemory("message")              \
-                              .HostMemory("domain_name")          \
+                              .HostMemory("category_name")          \
                               .HostMemory("marker_id")            \
                               .HostMemory("domain_handle")        \
                               .TypeConstraint<type>("T"),         \
@@ -137,7 +137,7 @@ class NvtxEndOp : public OpKernel {
                               .HostMemory("marker_id")            \
                               .HostMemory("domain_handle")        \
                               .HostMemory("grad_message")         \
-                              .HostMemory("grad_domain_name")     \
+                              .HostMemory("grad_category_name")     \
                               .TypeConstraint<type>("T"),         \
                           NvtxEndOp<type>);
 
