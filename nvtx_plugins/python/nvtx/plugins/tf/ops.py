@@ -41,7 +41,7 @@ def _maybe_convert_list_to_tensor(inputs):
 
 
 @ops.RegisterGradient('NvtxStart')
-def _nvtx_start_grad(op, grad, marker_id, domain_handle):
+def _nvtx_start_grad(op, grad, marker_id):
     # grad_message and grad_category_name are not used
     if not isinstance(marker_id, tf.Tensor) and marker_id is None:
         raise RuntimeError('Error in nvtx range %s. '
@@ -50,7 +50,6 @@ def _nvtx_start_grad(op, grad, marker_id, domain_handle):
     grad, null_grad = nvtx_tf_ops.nvtx_end(
         inputs=grad,
         marker_id=marker_id,
-        domain_handle=domain_handle,
         grad_message=op.inputs[2],
         grad_category_name=op.inputs[3]
     )
@@ -59,13 +58,13 @@ def _nvtx_start_grad(op, grad, marker_id, domain_handle):
 
 @ops.RegisterGradient('NvtxEnd')
 def _nvtx_end_grad(op, grad, null_grad):
-    grad, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+    grad, marker_id = nvtx_tf_ops.nvtx_start(
         inputs=grad,
         null_input=1.,
-        message=op.inputs[3],
-        category_name=op.inputs[4]
+        message=op.inputs[2],
+        category_name=op.inputs[3]
     )
-    return [grad, marker_id, domain_handle, None, None]
+    return [grad, marker_id, None, None]
 
 
 @deprecated_alias(
@@ -138,7 +137,7 @@ def start(inputs, message, category="forward",
 
     inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
 
-    inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+    inputs, marker_id = nvtx_tf_ops.nvtx_start(
         inputs=inputs,
         null_input=null_input,
         message=message,
@@ -149,7 +148,7 @@ def start(inputs, message, category="forward",
     if should_unstack:
         inputs = tf.unstack(inputs, axis=0)
 
-    return inputs, (marker_id, domain_handle, backward_message, backward_category)
+    return inputs, (marker_id, backward_message, backward_category)
 
 
 def end(inputs, nvtx_context, name=None):
@@ -183,14 +182,13 @@ def end(inputs, nvtx_context, name=None):
     if nvtx_context is None:
         return inputs
 
-    marker_id, domain_handle, backward_message, backward_category = nvtx_context
+    marker_id, backward_message, backward_category = nvtx_context
 
     inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
 
     output, null_output = nvtx_tf_ops.nvtx_end(
         inputs=inputs,
         marker_id=marker_id,
-        domain_handle=domain_handle,
         grad_message=backward_message,
         grad_category_name=backward_category,
         name=name

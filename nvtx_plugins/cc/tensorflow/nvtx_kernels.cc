@@ -60,27 +60,18 @@ class NvtxStartOp : public OpKernel {
 #endif
 
     // create nvtx marker
-    const nvtx_markers::NvtxRangeDescriptor range_desc =
+    const nvtxRangeId_t marker_id =
       nvtx_markers::start_range(message.c_str(), category_name.c_str());
 
-    const nvtxRangeId_t marker_id = range_desc.range_id;
-    const nvtxDomainHandle_t domain_handle = range_desc.domain_handle;
 
-
-    // push marker_id and domain_handle to outputs 1 and 2
-    Tensor *output_marker_id = nullptr, *output_domain_handle = nullptr;
+    // push marker_id to outputs 1
+    Tensor *output_marker_id = nullptr;
     OP_REQUIRES_OK(context,
                    context->allocate_output("marker_id",
                                             TensorShape({}),
                                             &output_marker_id)
                   );
-    OP_REQUIRES_OK(context,
-                   context->allocate_output("domain_handle",
-                                            TensorShape({}),
-                                            &output_domain_handle)
-                  );
     output_marker_id->scalar<int64>()() = marker_id;
-    output_domain_handle->scalar<int64>()() = (int64)domain_handle;
   }
 
   bool IsExpensive() override { return false; }
@@ -100,14 +91,10 @@ class NvtxEndOp : public OpKernel {
     }
 
     // Close NVTX range
-    const Tensor *marker_t, *category_t;
-
+    const Tensor *marker_t;
     OP_REQUIRES_OK(context, context->input("marker_id", &marker_t));
-    OP_REQUIRES_OK(context, context->input("domain_handle", &category_t));
 
     auto marker_id = marker_t->scalar<int64>()();
-    auto domain_handle = reinterpret_cast<nvtxDomainHandle_t>(
-      marker_t->scalar<int64>()());
 
     nvtx_markers::end_range(marker_id);
 
@@ -127,17 +114,15 @@ class NvtxEndOp : public OpKernel {
   REGISTER_KERNEL_BUILDER(Name("NvtxStart")                       \
                               .Device(DEVICE_GPU)                 \
                               .HostMemory("message")              \
-                              .HostMemory("category_name")          \
+                              .HostMemory("category_name")        \
                               .HostMemory("marker_id")            \
-                              .HostMemory("domain_handle")        \
                               .TypeConstraint<type>("T"),         \
                           NvtxStartOp<type>);                     \
   REGISTER_KERNEL_BUILDER(Name("NvtxEnd")                         \
                               .Device(DEVICE_GPU)                 \
                               .HostMemory("marker_id")            \
-                              .HostMemory("domain_handle")        \
                               .HostMemory("grad_message")         \
-                              .HostMemory("grad_category_name")     \
+                              .HostMemory("grad_category_name")   \
                               .TypeConstraint<type>("T"),         \
                           NvtxEndOp<type>);
 

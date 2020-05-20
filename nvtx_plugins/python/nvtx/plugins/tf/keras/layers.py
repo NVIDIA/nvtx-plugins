@@ -57,7 +57,6 @@ class NVTXStart(Layer):
         ``list`` of length 3:
             - output: The inputs ``Tensor``.
             - marker_id: ``int64 Tensor``, sent to :func:`NVTXEnd <NVTXEnd>`.
-            - domain_handle: ``int64 Tensor``. sent to :func:`NVTXEnd <NVTXEnd>`.
 
     """
 
@@ -80,15 +79,16 @@ class NVTXStart(Layer):
         super(NVTXStart, self).build(input_shape)
 
     def call(self, x):
-        x, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+        x, marker_id = nvtx_tf_ops.nvtx_start(
             inputs=x,
             message=self.message,
             category_name=self.category,
             null_input=self.null_input
         )
-        return [x, marker_id, domain_handle]
+        return [x, marker_id]
 
-    def compute_output_shape(self, input_shape):
+    @staticmethod
+    def compute_output_shape(input_shape):
         return [input_shape, (), ()]
 
 
@@ -121,7 +121,6 @@ class NVTXEnd(Layer):
         ``list`` of length 3:
             - inputs: The input ``Tensor``.
             - marker_id: ``int64 Tensor`` from :func:`NVTXStart <NVTXStart>`.
-            - domain_handle: ``int64 Tensor`` from :func:`NVTXStart <NVTXStart>`.
 
     Output shape:
             A ``Tensor`` with ``inputs`` shape.
@@ -143,17 +142,26 @@ class NVTXEnd(Layer):
         super(NVTXEnd, self).build(input_shape)
 
     def call(self, x):
-        assert isinstance(x, list) and (len(x) == 3)
-        inputs, marker_id, domain_handle = x
+        assert isinstance(x, list)
+
+        if len(x) == 2:
+            inputs, marker_id = x
+        elif  len(x) == 3:
+            inputs, marker_id, _ = x
+        else:
+            raise ValueError(
+                "`NVTXEnd` Layer received `x` of length != 2 in `call()`"
+            )
+
         output, _ = nvtx_tf_ops.nvtx_end(
             inputs=inputs,
             marker_id=marker_id,
-            domain_handle=domain_handle,
             grad_message=self.backward_message,
             grad_category_name=self.backward_category
         )
         return output
 
-    def compute_output_shape(self, input_shape):
+    @staticmethod
+    def compute_output_shape(input_shape):
         assert isinstance(input_shape, list)
         return [input_shape[0], ()]

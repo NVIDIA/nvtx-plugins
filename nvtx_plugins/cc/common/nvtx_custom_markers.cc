@@ -39,7 +39,7 @@ named_category const get_or_create_named_category (const std::string& name){
 
 }
 
-NvtxRangeDescriptor NVTX_API start_range(
+nvtxRangeId_t NVTX_API start_range(
   const std::string& range_name, const std::string& category_name) {
     auto event_attributes = nvtx3::event_attributes{
       COLOR_RED,
@@ -52,7 +52,7 @@ NvtxRangeDescriptor NVTX_API start_range(
       NvtxDefaultDomain, event_attributes.get()
     );
 
-    return NvtxRangeDescriptor {range_id, NvtxDefaultDomain};
+    return range_id;
 }
 
 void NVTX_API end_range(const nvtxRangeId_t range_id) {

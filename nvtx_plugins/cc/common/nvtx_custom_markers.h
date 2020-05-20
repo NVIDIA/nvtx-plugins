@@ -15,11 +15,6 @@ static const nvtx3::rgb COLOR_YELLOW{255, 255, 0};
 static const nvtx3::rgb COLOR_MAGENTA{255, 0, 255};
 static const nvtx3::rgb COLOR_CYAN{0, 255, 255};
 
-struct NvtxRangeDescriptor {
-  nvtxRangeId_t range_id;
-  nvtxDomainHandle_t domain_handle;
-};
-
 struct NvtxCategory{
   char const* name;
   const uint32_t id;
@@ -34,7 +29,7 @@ static const nvtxDomainHandle_t NvtxDefaultDomain =
 
 using named_category = nvtx3::named_category<_NvtxDefaultDomain>;
 
-NvtxRangeDescriptor NVTX_API start_range(
+nvtxRangeId_t NVTX_API start_range(
   const std::string& range_name, const std::string& category_name);
 
 void NVTX_API end_range(const nvtxRangeId_t range_id);
