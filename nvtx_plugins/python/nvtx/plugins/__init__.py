@@ -34,32 +34,18 @@ from nvtx.plugins.package_info import __keywords__
 from nvtx.plugins.common.logger import Logger as _Logger
 logging = _Logger()
 
-from nvtx.plugins.common.decorators import deprecated
-from nvtx.plugins.common.decorators import deprecated_argument
-from nvtx.plugins.common.decorators import deprecated_alias
-
-
-@deprecated(instructions='useless function, please remove')
-def lol():
-    pass
-
-
-@deprecated(instructions='useless class, please remove')
-class LOLClass(object):
-    pass
-
-
-class OKClass(object):
-    @deprecated(instructions='useless method, please remove')
-    def lolmethod(self):
-        pass
-
-
-@deprecated_argument(deprecated_args=["arg1"])
-def lolfunc():
-    pass
-
-
-@deprecated_alias(deprecated_aliases={"old": "new"})
-def lolfunc_alias(new):
-    print("new argument:", new)
+__all__ = [
+    "__shortversion__",
+    "__version__",
+    "__package_name__",
+    "__contact_names__",
+    "__contact_emails__",
+    "__homepage__",
+    "__repository_url__",
+    "__download_url__",
+    "__description__",
+    "__license__",
+    "__keywords__",
+    # Logging
+    "logging",
+]

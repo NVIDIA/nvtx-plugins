@@ -220,8 +220,7 @@ setup(
 
     # Contained modules and scripts.
     install_requires=install_requires,
-    setup_requires=install_requires,
-    tests_require=['pytest', 'pytest-runner'],
+    setup_requires=['pytest', 'pytest-runner'],
     extras_require=extras_require,
 
     zip_safe=False,
