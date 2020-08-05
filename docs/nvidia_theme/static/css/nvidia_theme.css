@@ -230,3 +230,7 @@ footer {
     background-size: 140px auto;
     /* text-indent: -9999px; */
 }
+
+.wy-body-for-nav .keep-us-sustainable a {
+    color: #3680c1;
+}
