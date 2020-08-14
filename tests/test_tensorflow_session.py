@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import unittest
 import pytest
 
@@ -10,6 +11,7 @@ from distutils.version import LooseVersion
 import tensorflow as tf
 
 TIMING_THRESHOLD = 5
+XLA_SPEEDUP_FACTOR = 9
 
 
 class TensorflowSessionTestCase(NVTXBaseTest):
@@ -55,6 +57,12 @@ class TensorflowSessionTestCase(NVTXBaseTest):
                 ("Dense 5 grad", 1.8e5),  # 184,018
                 ("Dense Block", 5.7e5),  # 565,927
                 ("Dense Block grad", 1.21e6)  # 1,210,117
+            ]
+
+        if os.environ.get("TF_XLA_FLAGS", None) is not None:
+            range_names = [
+                (name, target * XLA_SPEEDUP_FACTOR)
+                for (name, target) in range_names
             ]
 
         with self.open_db(TensorflowSessionTestCase.JOB_NAME) as conn:
