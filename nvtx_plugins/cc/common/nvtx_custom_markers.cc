@@ -36,7 +36,7 @@ named_category const get_or_create_named_category (const std::string& name){
   return named_cat_pair->second;
 }
 
-}
+} // detail
 
 nvtxRangeId_t NVTX_API start_range(
   const std::string& range_name, const std::string& category_name) {
