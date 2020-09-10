@@ -15,25 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nvtx.plugins import nvtx_clib
+import nvtx
+from nvtx.plugins import DEFAULT_DOMAIN
 
 # TODO(ahmadki): support category names
 # TODO(ahmadki): move nvtx functionality to nvtx.plugins module ?
 
 
 class BaseCallback(object):
-    def __init__(self):
-        # TODO(ahmadki): try except OSError
-        self.marker_ids = {}
 
     def open_marker(self, message):
-        if self.marker_ids.get(message, None) is None:
-            self.marker_ids[message] = []
-        marker = nvtx_clib.nvtxRangeStartW(message)
-        self.marker_ids[message].append(marker)
+        print("Pushing: `{}` ...".format(message))
+        # nvtx.push_range(message=message, color="blue", domain=DEFAULT_DOMAIN)
+        nvtx.push_range(message=message)
 
-    def close_marker(self, message):
-        if self.marker_ids.get(message, None) is not None:
-            nvtx_clib.nvtxRangeEnd(self.marker_ids[message].pop())
-            if len(self.marker_ids[message]) == 0:
-                del self.marker_ids[message]
+    def close_marker(self):
+        print("Popping range ...")
+        nvtx.pop_range()

@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
-nvtx_clib = ctypes.cdll.LoadLibrary('libnvToolsExt.so')
-
 from nvtx.plugins.package_info import __shortversion__
 from nvtx.plugins.package_info import __version__
 
@@ -34,6 +31,8 @@ from nvtx.plugins.package_info import __keywords__
 from nvtx.plugins.common.logger import Logger as _Logger
 logging = _Logger()
 
+DEFAULT_DOMAIN = "nvtx-plugins-py"
+
 __all__ = [
     "__shortversion__",
     "__version__",
@@ -48,4 +47,6 @@ __all__ = [
     "__keywords__",
     # Logging
     "logging",
+    # Global variables
+    "DEFAULT_DOMAIN"
 ]

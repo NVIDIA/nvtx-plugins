@@ -412,10 +412,10 @@ class custom_build_ext(build_ext):
         #
         #     warn('building extension "%s" failed: %s' % (ext.name, e))
 
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as e:
             if not ext.optional:
                 raise
-            warn('extension "%s" has been skipped' % ext.name)
+            warn('extension "%s" has been skipped\nReason: %s' % (ext.name, e))
 
         except:
             raise CompileError('Unable to build plugin, will skip it.\n\n%s' % traceback.format_exc())

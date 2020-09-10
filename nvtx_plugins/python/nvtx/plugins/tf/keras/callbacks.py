@@ -35,41 +35,40 @@ class NVTXCallback(BaseCallback, tf.keras.callbacks.Callback):
         self.open_marker(self.epoch_message.format(epoch=epoch))
 
     def on_epoch_end(self, epoch, logs=None):
-        self.close_marker(self.epoch_message.format(epoch=epoch))
+        self.close_marker()
 
     def on_train_batch_begin(self, batch, logs=None):
         self.open_marker(self.batch_message.format(batch=batch))
 
     def on_train_batch_end(self, batch, logs=None):
-        self.close_marker(self.batch_message.format(batch=batch))
+        self.close_marker()
 
     def on_test_batch_begin(self, batch, logs=None):
         self.open_marker(self.batch_message.format(batch=batch))
 
     def on_test_batch_end(self, batch, logs=None):
-        self.close_marker(self.batch_message.format(batch=batch))
+        self.close_marker()
 
     def on_predict_batch_begin(self, batch, logs=None):
         self.open_marker(self.batch_message.format(batch=batch))
 
     def on_predict_batch_end(self, batch, logs=None):
-        self.close_marker(self.batch_message.format(batch=batch))
+        self.close_marker()
 
     def on_train_begin(self, logs=None):
         self.open_marker('Train')
 
     def on_train_end(self, logs=None):
-        self.close_marker('Train')
+        self.close_marker()
 
     def on_test_begin(self, logs=None):
         self.open_marker('Test')
 
     def on_test_end(self, logs=None):
-        self.close_marker('Test')
+        self.close_marker()
 
     def on_predict_begin(self, logs=None):
         self.open_marker('Predict')
 
     def on_predict_end(self, logs=None):
-        self.close_marker('Predict')
-
+        self.close_marker()
