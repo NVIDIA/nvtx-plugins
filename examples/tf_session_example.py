@@ -26,7 +26,7 @@ import nvtx.plugins.tf as nvtx_tf
 from nvtx.plugins.tf.estimator import NVTXHook
 
 ENABLE_NVTX = True
-TRAINING_STEPS = 5000
+TRAINING_STEPS = 1500
 
 tf.compat.v1.disable_eager_execution()
 

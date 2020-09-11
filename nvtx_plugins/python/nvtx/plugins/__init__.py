@@ -31,7 +31,7 @@ from nvtx.plugins.package_info import __keywords__
 from nvtx.plugins.common.logger import Logger as _Logger
 logging = _Logger()
 
-DEFAULT_DOMAIN = "nvtx-plugins-py"
+DEFAULT_DOMAIN = "nvtx-plugins-callbacks"
 
 __all__ = [
     "__shortversion__",

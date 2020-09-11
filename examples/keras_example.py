@@ -29,7 +29,7 @@ from tensorflow.keras.layers import Input, Dense
 from nvtx.plugins.tf.keras.layers import NVTXStart, NVTXEnd
 from nvtx.plugins.tf.keras.callbacks import NVTXCallback
 
-TRAINING_STEPS = 5000
+TRAINING_STEPS = 1500
 
 
 def get_dataset(batch_size):

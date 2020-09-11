@@ -24,11 +24,13 @@ from nvtx.plugins import DEFAULT_DOMAIN
 
 class BaseCallback(object):
 
+    def __init__(self):
+        self._range_stack = []
+
     def open_marker(self, message):
-        print("Pushing: `{}` ...".format(message))
-        # nvtx.push_range(message=message, color="blue", domain=DEFAULT_DOMAIN)
-        nvtx.push_range(message=message)
+        marker_id = nvtx.start_range(message=message, color="blue", domain=DEFAULT_DOMAIN)
+        self._range_stack.append(marker_id)
 
     def close_marker(self):
-        print("Popping range ...")
-        nvtx.pop_range()
+        marker_id = self._range_stack.pop()
+        nvtx.end_range(marker_id, domain=DEFAULT_DOMAIN)

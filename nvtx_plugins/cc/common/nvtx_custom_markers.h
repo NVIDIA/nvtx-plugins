@@ -21,7 +21,7 @@ struct NvtxCategory{
 };
 
 struct _NvtxDefaultDomain{
-  static constexpr char const* name{"nvtx-plugins"};
+  static constexpr char const* name{"nvtx-plugins-core"};
 };
 
 static const nvtxDomainHandle_t NvtxDefaultDomain =
