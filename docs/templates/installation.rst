@@ -82,7 +82,7 @@ Nonetheless, due to an issue in Sphinx **only Python 3.7 is supported** to build
 
 
 Nsight Systems
---------------
+^^^^^^^^^^^^^^
 
 NVIDIA Nsight Systems and can be downloaded and from the
 `NVIDIA's Developer Website <https://developer.nvidia.com/nsight-systems>`_. `nsys` is
