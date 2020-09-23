@@ -234,9 +234,9 @@ This project is released under the Apache License, Version 2.0
 .. |License| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
    :target: https://opensource.org/licenses/Apache-2.0
 
-.. |Documentation| image:: https://readthedocs.org/projects/nvtx-plugins/badge/?version=latest
-   :target: https://nvtx-plugins.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status..
+.. |Documentation| image:: https://readthedocs.com/projects/nvidia-nvtx-plugins/badge/?version=latest
+   :target: https://nvidia-nvtx-plugins.readthedocs-hosted.com/deeplearning/frameworks/nvtx-plugins/user-guide/docs/en/latest/?badge=latest
+   :alt: Documentation Status
 
 .. |Release| image:: https://img.shields.io/github/release/nvidia/nvtx-plugins.svg
    :target: https://github.com/NVIDIA/nvtx-plugins/releases/
