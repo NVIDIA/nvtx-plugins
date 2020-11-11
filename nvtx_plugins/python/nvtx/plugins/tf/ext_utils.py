@@ -33,54 +33,36 @@
 # ==============================================================================
 
 import os
-import sysconfig
 
 from tensorflow.python.framework import load_library as _load_library
 from tensorflow.python.platform import resource_loader
 
-__all__ = ["get_ext_suffix", "load_library"]
+from nvtx.plugins.c_extensions_utils import TFExtension
+from nvtx.plugins.common.ext_utils import get_extension_relative_path
+
+__all__ = ["load_library"]
 
 
-# Source: https://github.com/horovod/horovod/blob/abc3d88544/horovod/tensorflow/mpi_ops.py#L33
-def load_library(name):
+# Source:
+# https://github.com/horovod/horovod/blob/abc3d/horovod/tensorflow/mpi_ops.py#L33
+def load_library(extension):
     """Loads a .so file containing the specified operators.
     Args:
-      name: The name of the .so file to load.
+      extension: The name of the .so file to load.
     Raises:
       NotFoundError if were not able to load .so file.
     """
 
+    if not isinstance(extension, TFExtension):
+        raise ValueError(
+            "The extension received is not an instance of `TFExtension`: %s" %
+            extension
+        )
+
+    name = get_extension_relative_path(extension)
+    name = os.path.join(*name.split(os.path.sep)[3:])
+
     filename = resource_loader.get_path_to_datafile(name)
     library = _load_library.load_op_library(filename)
+
     return library
-
-
-def get_ext_suffix():
-    """Determine library extension for various versions of Python."""
-    ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
-
-    if ext_suffix:
-        return ext_suffix
-
-    ext_suffix = sysconfig.get_config_var('SO')
-    if ext_suffix:
-        return ext_suffix
-
-    return '.so'
-
-
-def get_extension_full_path(pkg_path, *args):
-    assert len(args) >= 1
-    dir_path = os.path.join(os.path.dirname(pkg_path), *args[:-1])
-    full_path = os.path.join(dir_path, args[-1] + get_ext_suffix())
-    return full_path
-
-
-def check_extension(ext_name, ext_env_var, pkg_path, *args):
-    full_path = get_extension_full_path(pkg_path, *args)
-
-    if not os.path.exists(full_path):
-        raise ImportError(
-            'NVTX-Plugins %s has not been built.  If this is not expected, please reinstall to debug the build error' %
-            ext_name
-        )

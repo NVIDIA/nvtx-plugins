@@ -15,18 +15,33 @@ from contextlib import contextmanager
 
 
 __all__ = [
-    'CustomTestCase',
+    'NVTXBaseTest',
 ]
 
+# http://people.cs.pitt.edu/~alanjawi/cs449/code/shell/UnixSignals.htm
 SUCCESS_CODE = 0
 SIGKILL_CODE = 9
+SIGTERM_CODE = 15
 
 
-class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
+class NVTXBaseTest(unittest.TestCase, metaclass=ABCMeta):
 
     @abstractmethod
     def JOB_NAME(self):
         pass
+
+    @staticmethod
+    @contextmanager
+    def catch_assert_error(range_name):
+        try:
+            yield
+        except AssertionError as e:
+            raise type(e)(
+                "Issue with range: {range}\n{original_error}".format(
+                    range=range_name,
+                    original_error=str(e)
+                )
+            ).with_traceback(sys.exc_info()[2])
 
     def run_command(self, job_name):
 
@@ -37,18 +52,21 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
                 pass
 
         def exec_cmd(cmd):
+
+            # command_proc = subprocess.run(" ".join(cmd), shell=True, check=False)
             command_proc = subprocess.Popen(cmd)
             return_code = command_proc.wait()
 
-            if return_code not in [SUCCESS_CODE, SIGKILL_CODE]:
+            if return_code not in [SUCCESS_CODE, SIGKILL_CODE, SIGTERM_CODE]:
                 sys.tracebacklimit = 0
+                # stdout, stderr = command_proc.stdout, command_proc.stderr
                 stdout, stderr = command_proc.communicate()
                 raise RuntimeError(
-                    "\n##################################################\n"
+                    "\n################################################\n"
                     "[*] STDOUT:{error_stdout}\n"
                     "[*] STERR:{error_stderr}\n"
                     "[*] command launched: `{command}`\n"
-                    "##################################################\n".format(
+                    "################################################\n".format(
                         error_stdout=stdout.decode("utf-8"),
                         error_stderr=stderr.decode("utf-8"),
                         command=" ".join(cmd)
@@ -60,12 +78,13 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
         modified_command = [
             'nsys',
             'profile',
-            '--delay=10',
+            '--delay=1',
             '--duration=30',
             '--sample=cpu',
             '--trace=nvtx,cuda',
             '--output=examples/%s' % job_name,
             '--force-overwrite=true',
+            '--export=sqlite',
             '--stop-on-exit=true',
             '--kill=sigkill'
         ]
@@ -77,18 +96,11 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
         self.assertTrue(exec_cmd(run_command))
 
-        base_path = "examples/%s." % job_name
-        self.assertTrue(os.path.exists(base_path + "qdrep"))
+        report_path = "examples/%s." % job_name
 
-        command_export = [
-            "nsys-exporter",
-            "--export-sqlite",
-            "--input-file=examples/%s.qdrep" % job_name,
-            "--output-file=examples/%s.sqlite" % job_name
-        ]
-
-        self.assertTrue(exec_cmd(command_export))
-        self.assertTrue(os.path.exists(base_path + "sqlite"))
+        self.assertFalse(os.path.exists(report_path + "qdstrm"))
+        self.assertTrue(os.path.exists(report_path + "qdrep"))
+        self.assertTrue(os.path.exists(report_path + "sqlite"))
 
         return True
 
@@ -112,15 +124,17 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
 
         conn.close()
 
-    def query_report(self, conn, range_name, filter_negative_start=True):
+    @staticmethod
+    def query_report(conn, range_name, filter_negative_start=True):
 
         filter_negative_start_query = "AND `start` > 0 "
 
         cur = conn.cursor()
         cur.execute(
             "SELECT "
-                "count(*),  "
-                "avg(`end` - `start`) as `avg_exec_time` "
+                "count(*), "
+                "avg(`end` - `start`) as `avg_exec_time`, "
+                "`category`"
             "FROM NVTX_EVENTS "
             "WHERE "
                 "`text` LIKE '{range_name}' "
@@ -135,3 +149,18 @@ class CustomTestCase(unittest.TestCase, metaclass=ABCMeta):
         )
 
         return cur.fetchone()
+
+    @staticmethod
+    def get_category_id(conn, category_name):
+
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT "
+                "`category` "
+            "FROM NVTX_EVENTS "
+            "WHERE "
+                "`text` = '{category_name}' "
+                "AND `eventType` = 33".format(category_name=category_name)
+        )
+
+        return cur.fetchone()[0]

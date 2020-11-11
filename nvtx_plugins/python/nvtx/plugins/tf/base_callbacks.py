@@ -15,26 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
+from nvtx.plugins import nvtx_clib
 
-# TODO(ahmadki): support domain names
+# TODO(ahmadki): support category names
 # TODO(ahmadki): move nvtx functionality to nvtx.plugins module ?
 
 
 class BaseCallback(object):
     def __init__(self):
         # TODO(ahmadki): try except OSError
-        self.libnvtx = ctypes.cdll.LoadLibrary('libnvToolsExt.so')
         self.marker_ids = {}
 
     def open_marker(self, message):
         if self.marker_ids.get(message, None) is None:
             self.marker_ids[message] = []
-        marker = self.libnvtx.nvtxRangeStartW(message)
+        marker = nvtx_clib.nvtxRangeStartW(message)
         self.marker_ids[message].append(marker)
 
     def close_marker(self, message):
         if self.marker_ids.get(message, None) is not None:
-            self.libnvtx.nvtxRangeEnd(self.marker_ids[message].pop())
+            nvtx_clib.nvtxRangeEnd(self.marker_ids[message].pop())
             if len(self.marker_ids[message]) == 0:
                 del self.marker_ids[message]

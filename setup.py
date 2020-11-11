@@ -19,18 +19,21 @@
 
 import codecs
 import os
+import shutil
 import sys
+import sysconfig
 
 import subprocess
 
 from setuptools import setup
-from setuptools import Extension
+from setuptools import Command
+from setuptools import find_namespace_packages
 
-sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins")))  # Important
-sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python")))  # Important
-sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx")))  # Important
-sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx", "plugins")))  # Important
-sys.path.insert(0, os.path.abspath(os.path.join("nvtx_plugins", "python", "nvtx", "plugins", "tf")))  # Important
+import imp
+package_info = imp.load_source(
+    'package_info',
+    'nvtx_plugins/python/nvtx/plugins/package_info.py'
+)
 
 from package_info import __contact_emails__
 from package_info import __contact_names__
@@ -43,21 +46,63 @@ from package_info import __package_name__
 from package_info import __repository_url__
 from package_info import __version__
 
+c_extensions = imp.load_source(
+    'c_extensions',
+    'nvtx_plugins/python/nvtx/plugins/c_extensions.py'
+)
+from c_extensions import collect_all_c_extensions
+
 from setup_utils import custom_build_ext
 
 
+class VersionCommand(Command):
+
+    description = 'print library version'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        print(__version__)
+
+
+# Force Build Cache Cleaning
+def force_clean_build_cache():
+    def distutils_dir_name(dname):
+
+        """Returns the name of a distutils build directory"""
+        f = "{dirname}.{platform}-{version[0]}.{version[1]}"
+        return f.format(dirname=dname,
+                        platform=sysconfig.get_platform(),
+                        version=sys.version_info)
+
+    for build_dir in ['lib', 'temp']:
+        buildpath = os.path.join('build', distutils_dir_name(build_dir), 'nvtx')
+        try:
+            shutil.rmtree(buildpath)
+        except FileNotFoundError:
+            pass
+
+    cache_dirs = [".eggs", ".pytest_cache", "build", "nvtx_plugins.egg-info"]
+    for dir in cache_dirs:
+        try:
+            shutil.rmtree(dir)
+        except FileNotFoundError:
+            pass
+
+
 def run_cmd(command):
-    ps = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    ps = subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
     return ps.communicate()[0].decode('utf-8').strip()
-
-
-def get_tf_pkgname():
-
-    for pkg_name in ["tensorflow-gpu", "tf-nightly-gpu"]:
-        if pkg_name in run_cmd("pip freeze | grep %s" % pkg_name):
-            return pkg_name
-
-    return "tensorflow"  # Default if not found
 
 
 def req_file(filename, folder="requirements"):
@@ -68,23 +113,15 @@ def req_file(filename, folder="requirements"):
     return [x.strip() for x in content]
 
 
-install_requires = req_file("requirements.txt") + [get_tf_pkgname()]
+force_clean_build_cache()
+
+install_requires = req_file("requirements.txt")
 extras_require = {
     'test': req_file("requirements_test.txt"),
 }
 
 tests_requirements = extras_require["test"]
 
-tensorflow_nvtx_lib = Extension(
-    'nvtx.plugins.tf.lib.nvtx_ops',
-    sources=[
-        'nvtx_plugins/cc/nvtx_ops.cc',
-        'nvtx_plugins/cc/nvtx_kernels.cc',
-    ],
-    undef_macros=["NDEBUG"],
-    extra_compile_args=['-lnvToolsExt'],
-    extra_link_args=['-lnvToolsExt']
-)
 
 # =================== Reading Readme file as TXT files ===================
 
@@ -160,25 +197,31 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
 
         # Additional Setting
         'Environment :: Console',
         'Natural Language :: English',
+        'Operating System :: POSIX',
         'Operating System :: POSIX :: Linux',
     ],
+    platforms=["Linux"],
 
-    cmdclass={'build_ext': lambda dist: custom_build_ext(dist, tensorflow_nvtx_lib)},
-    ext_modules=[tensorflow_nvtx_lib],
+    cmdclass={
+        'build_ext': custom_build_ext,
+        'version': VersionCommand,
+    },
+    ext_modules=collect_all_c_extensions(),
 
     # Add in any packaged data.
     include_package_data=True,
-    packages=['nvtx.plugins.tf', 'nvtx.plugins.tf.keras'],
+    packages=find_namespace_packages(where='nvtx_plugins/python/'),
     package_dir={'': 'nvtx_plugins/python'},
 
     # Contained modules and scripts.
     install_requires=install_requires,
+    setup_requires=['pytest', 'pytest-runner'],
     extras_require=extras_require,
-    setup_requires=['pytest-runner'],
 
     zip_safe=False,
 

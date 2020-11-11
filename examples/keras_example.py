@@ -15,10 +15,13 @@
 # limitations under the License.
 
 import os
+import pathlib
+
 import numpy as np
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+import tensorflow as tf
 from tensorflow.keras import optimizers
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense
@@ -28,64 +31,89 @@ from nvtx.plugins.tf.keras.callbacks import NVTXCallback
 
 TRAINING_STEPS = 5000
 
-# load pima indians dataset
-dataset = np.loadtxt('examples/pima-indians-diabetes.data.csv', delimiter=',')
-features = dataset[:, 0:8]
-labels = dataset[:, 8]
+
+def get_dataset(batch_size):
+  # load pima indians dataset
+  csv_data = np.loadtxt(
+      os.path.join(
+          pathlib.Path(__file__).parent.absolute(),
+          'pima-indians-diabetes.data.csv'
+      ),
+      delimiter=','
+  )
+
+  features_arr = csv_data[:, 0:8]
+  labels_arr = csv_data[:, 8]
+
+  ds_x = tf.data.Dataset.from_tensor_slices(features_arr)
+  ds_y = tf.data.Dataset.from_tensor_slices(labels_arr)
+
+  ds = tf.data.Dataset.zip((ds_x, ds_y))
+
+  ds = ds.shuffle(buffer_size=batch_size*2).repeat()
+  ds = ds.batch(batch_size, drop_remainder=True)
+  ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
+  return ds
 
 
 def DenseBinaryClassificationNet(input_shape=(8,)):
     inputs = Input(input_shape)
 
     x = inputs
-    x, marker_id, domain_id = NVTXStart(message='Dense 1',
-                                        domain_name='forward',
-                                        trainable=True)(x)
+    x, marker_id = NVTXStart(message='Dense 1',
+                             domain_name='forward',
+                             trainable=True)(x)
     x = Dense(1024, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 1 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id])
 
-    x, marker_id, domain_id = NVTXStart(message='Dense 2',
-                                        domain_name='forward')(x)
+    x, marker_id = NVTXStart(message='Dense 2',
+                             domain_name='forward',
+                             trainable=True)(x)
     x = Dense(1024, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 2 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id])
 
-    x, marker_id, domain_id = NVTXStart(message='Dense 3',
-                                        domain_name='forward')(x)
+    x, marker_id = NVTXStart(message='Dense 3',
+                             domain_name='forward',
+                             trainable=True)(x)
     x = Dense(512, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 3 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id])
 
-    x, marker_id, domain_id = NVTXStart(message='Dense 4',
-                                        domain_name='forward')(x)
+    x, marker_id = NVTXStart(message='Dense 4',
+                             domain_name='forward',
+                             trainable=True)(x)
     x = Dense(512, activation='relu')(x)
     x = NVTXEnd(grad_message='Dense 4 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id])
 
-    x, marker_id, domain_id = NVTXStart(message='Dense 5',
-                                        domain_name='forward')(x)
+    x, marker_id = NVTXStart(message='Dense 5',
+                             domain_name='forward',
+                             trainable=True)(x)
     x = Dense(1, activation='sigmoid')(x)
     x = NVTXEnd(grad_message='Dense 5 grad',
-                grad_domain_name='backwards')([x, marker_id, domain_id])
+                grad_domain_name='backward')([x, marker_id])
 
     predictions = x
     model = Model(inputs=inputs, outputs=predictions)
     return model
 
 
-nvtx_callback = NVTXCallback()
+if __name__ == "__main__":
+  nvtx_callback = NVTXCallback()
 
-model = DenseBinaryClassificationNet()
-sgd = optimizers.SGD(lr=0.001, momentum=0.9, nesterov=True)
-model.compile(optimizer=sgd,
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-model.fit(
-    features,
-    labels,
-    batch_size=128,
-    callbacks=[nvtx_callback],
-    epochs=1,
-    steps_per_epoch=TRAINING_STEPS
-)
+  model = DenseBinaryClassificationNet()
+  sgd = optimizers.SGD(lr=0.001, momentum=0.9, nesterov=True)
+  model.compile(optimizer=sgd,
+                loss='binary_crossentropy',
+                metrics=['accuracy'])
+
+  features = get_dataset(batch_size=128)
+
+  model.fit(
+      features,
+      callbacks=[nvtx_callback],
+      epochs=1,
+      steps_per_epoch=TRAINING_STEPS
+  )

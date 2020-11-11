@@ -34,8 +34,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import os
 import re
 import subprocess
@@ -44,17 +42,36 @@ import textwrap
 import traceback
 
 from contextlib import contextmanager
+from copy import deepcopy
 
+from distutils.errors import CCompilerError
 from distutils.errors import CompileError
 from distutils.errors import DistutilsError
 from distutils.errors import DistutilsPlatformError
 from distutils.errors import LinkError
+from distutils.file_util import copy_file
 from distutils.sysconfig import customize_compiler
 from distutils.version import LooseVersion
 
 from setuptools.command.build_ext import build_ext
 
-__all__ = ["custom_build_ext"]
+# Avoid loading Tensorflow or PyTorch during packaging.
+if "sdist" not in sys.argv:
+    # Torch must be imported first
+    try:
+        import torch
+        from torch.utils.cpp_extension import check_compiler_abi_compatibility
+    except ModuleNotFoundError:
+        pass
+
+    try:
+        import tensorflow as tf
+    except ModuleNotFoundError:
+        pass
+
+__all__ = [
+    "custom_build_ext",
+]
 
 # determining if the system has cmake installed
 try:
@@ -65,24 +82,50 @@ except (FileNotFoundError, subprocess.CalledProcessError):
     have_cmake = False
 
 
-def check_tf_version():
-    try:
-        import tensorflow as tf
-        if LooseVersion(tf.__version__) < LooseVersion('1.1.0'):
-            raise DistutilsPlatformError(
-                'Your TensorFlow version %s is outdated.  '
-                'NVTX Plugins requires tensorflow>=1.1.0' % tf.__version__
-            )
+class VersionError(DistutilsError):
+    pass
 
-    except ImportError:
+
+def parse_version(version_str):
+
+    if "dev" in version_str:
+        return 9999999999
+
+    m = re.match('^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?', version_str)
+
+    if m is None:
+        return None
+
+    # turn version string to long integer
+    version = int(m.group(1)) * 10**9
+
+    if m.group(2) is not None:
+        version += int(m.group(2)) * 10**6
+
+    if m.group(3) is not None:
+        version += int(m.group(3)) * 10**3
+
+    if m.group(4) is not None:
+        version += int(m.group(4))
+
+    return version
+
+
+def check_tf_version():
+    import tensorflow as tf
+    if LooseVersion(tf.__version__) < LooseVersion('1.14.0'):
         raise DistutilsPlatformError(
-            'import tensorflow failed, is it installed?\n\n%s' % traceback.format_exc()
+            'Your TensorFlow version %s is outdated.  '
+            'NVTX Plugins requires tensorflow>=1.1.0' % tf.__version__
         )
 
-    except AttributeError:
-        # This means that tf.__version__ was not exposed, which makes it *REALLY* old.
+
+def check_torch_version():
+    import torch
+    if LooseVersion(torch.__version__) < LooseVersion('1.3.0'):
         raise DistutilsPlatformError(
-            'Your TensorFlow version is outdated. NVTX Plugins requires tensorflow>=1.1.0'
+            'Your PyTorch version %s is outdated.  '
+            'Horovod requires torch>=0.4.0' % torch.__version__
         )
 
 
@@ -109,13 +152,14 @@ def build_cmake(build_ext, ext, prefix, plugin_ext=None, options=None):
     cmake_args = [
         '-DCMAKE_BUILD_TYPE=' + config,
         '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(config.upper(), extdir),
-        '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(config.upper(),
-                                                        lib_output_dir),
+        '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{}={}'.format(config.upper(), lib_output_dir),
     ]
 
     cmake_build_args = [
-        '--config', config,
-        '--', '-j4',
+        '--config',
+        config,
+        '--',
+        '-j4',
     ]
 
     # Keep temp build files within a unique subdirectory
@@ -144,10 +188,7 @@ def remove_offensive_gcc_compiler_options(compiler_version):
     offensive_replacements = dict()
 
     if compiler_version < LooseVersion('4.9'):
-        offensive_replacements = {
-            '-Wdate-time': '',
-            '-fstack-protector-strong': '-fstack-protector'
-        }
+        offensive_replacements = {'-Wdate-time': '', '-fstack-protector-strong': '-fstack-protector'}
 
     if offensive_replacements:
         from sysconfig import get_config_var
@@ -187,10 +228,7 @@ def get_cpp_flags(build_ext):
     # avx_flags = ['-mf16c', '-mavx'] if check_avx_supported() else []
     avx_flags = []
 
-    flags_to_try = [
-        default_flags,
-        default_flags + ['-stdlib=libc++']
-    ]
+    flags_to_try = [default_flags, default_flags + ['-stdlib=libc++']]
 
     if avx_flags:
         flags_to_try.append(default_flags + avx_flags)
@@ -199,7 +237,8 @@ def get_cpp_flags(build_ext):
     for cpp_flags in flags_to_try:
         try:
             test_compile(
-                build_ext, 'test_cpp_flags',
+                build_ext,
+                'test_cpp_flags',
                 extra_compile_preargs=cpp_flags,
                 code=textwrap.dedent(
                     '''\
@@ -233,12 +272,16 @@ def get_link_flags(build_ext):
     for link_flags in flags_to_try:
 
         try:
-            test_compile(build_ext, 'test_link_flags',
-                         extra_link_preargs=link_flags,
-                         code=textwrap.dedent('''\
+            test_compile(
+                build_ext,
+                'test_link_flags',
+                extra_link_preargs=link_flags,
+                code=textwrap.
+                dedent('''\
                     void test() {
                     }
-                    '''))
+                    ''')
+            )
 
             return link_flags
 
@@ -351,59 +394,98 @@ def get_common_options(build_ext):
 # run the customize_compiler
 class custom_build_ext(build_ext):
 
-    def __init__(self, dist, tf_libs):
+    @contextmanager
+    def _filter_build_errors(self, ext):
 
-        if isinstance(tf_libs, (list, tuple)):
-            self._tf_libs = tf_libs
-        else:
-            self._tf_libs = [tf_libs]
+        def warn(msg):
+            msg = "WARNING: %s" % msg
+            print("\n%s" % ("%" * (len(msg))))
+            print(msg)
+            print("%s\n" % ("%" * (len(msg))))
 
-        super(custom_build_ext, self).__init__(dist)
+        try:
+            yield
+
+        # except (CCompilerError, DistutilsError, CompileError) as e:
+        #     if not ext.optional:
+        #         raise
+        #
+        #     warn('building extension "%s" failed: %s' % (ext.name, e))
+
+        except ModuleNotFoundError:
+            if not ext.optional:
+                raise
+            warn('extension "%s" has been skipped' % ext.name)
+
+        except:
+            raise CompileError('Unable to build plugin, will skip it.\n\n%s' % traceback.format_exc())
+
+    def copy_extensions_to_source(self):
+        build_py = self.get_finalized_command('build_py')
+
+        for ext in self.extensions:
+            fullname = self.get_ext_fullname(ext.name)
+            filename = self.get_ext_filename(fullname)
+
+            modpath = fullname.split('.')
+            package = '.'.join(modpath[:-1])
+
+            package_dir = build_py.get_package_dir(package)
+
+            dest_filename = os.path.join(package_dir, os.path.basename(filename))
+            src_filename = os.path.join(self.build_lib, filename)
+
+            if ext._built_with_success:
+                # Always copy, even if source is older than destination, to ensure
+                # that the right extensions for the current Python/platform are
+                # used.
+                copy_file(src_filename, dest_filename, verbose=self.verbose, dry_run=self.dry_run)
+
+                if ext._needs_stub:
+                    self.write_stub(package_dir or os.curdir, ext, True)
 
     def build_extensions(self):
 
         options = get_common_options(self)
 
-        built_plugins = []
+        for extension in self.extensions:
 
-        for extension in self._tf_libs:
+            with self._filter_build_errors(extension):
 
-            try:
-                build_tf_extension(self, extension, options)
-                built_plugins.append(True)
+                if extension.__class__.__name__ == "TFExtension":
+                    build_tf_extension(self, extension, options)
+                    extension._built_with_success = True
 
-            except:
-                print("===========================================================================================")
-                print(
-                    'INFO: Unable to build TensorFlow plugin, will skip it.\n\n%s' % traceback.format_exc(),
-                    file=sys.stderr
-                )
-                print("===========================================================================================")
+                elif extension.__class__.__name__ == "PyTExtension":
+                    build_torch_extension(self, extension, options)
+                    extension._built_with_success = True
 
-                built_plugins.append(False)
-
-            if not built_plugins[-1]:
-                raise DistutilsError('TensorFlow plugin: `%s` failed to build. Aborting.' % extension.name)
-
-        if not any(built_plugins):
-            raise DistutilsError('No plugin was built. See errors above.')
+                else:
+                    raise CompileError("Unsupported extension: %s", extension)
 
 
-def build_tf_extension(build_ext, tf_lib, options):
+def build_tf_extension(build_ext, ext, options):
     check_tf_version()
+
+    # Backup the options, preventing other plugins access libs that
+    # compiled with compiler of this plugin
+    options = deepcopy(options)
 
     tf_compile_flags, tf_link_flags = get_tf_flags(build_ext, options['COMPILE_FLAGS'])
 
-    tf_lib.define_macros = options['MACROS'] + tf_lib.define_macros
-    tf_lib.include_dirs = options['INCLUDES'] + tf_lib.include_dirs
+    # Update HAVE_CUDA to mean that PyTorch supports CUDA.
+    ext.define_macros = options['MACROS'] + ext.define_macros
+    ext.include_dirs = options['INCLUDES'] + [
+        x() if callable(x) else x for x in ext.include_dirs
+    ]
 
-    tf_lib.sources = options['SOURCES'] + tf_lib.sources
+    ext.sources = options['SOURCES'] + ext.sources
 
-    tf_lib.extra_compile_args = options['COMPILE_FLAGS'] + tf_compile_flags + tf_lib.extra_compile_args
-    tf_lib.extra_link_args = options['LINK_FLAGS'] + tf_link_flags + tf_lib.extra_link_args
+    ext.extra_compile_args = options['COMPILE_FLAGS'] + tf_compile_flags + ext.extra_compile_args
+    ext.extra_link_args = options['LINK_FLAGS'] + tf_link_flags + ext.extra_link_args
 
-    tf_lib.library_dirs = options['LIBRARY_DIRS'] + tf_lib.library_dirs
-    tf_lib.libraries = options['LIBRARIES'] + tf_lib.libraries
+    ext.library_dirs = options['LIBRARY_DIRS'] + ext.library_dirs
+    ext.libraries = options['LIBRARIES'] + ext.libraries
 
     cc_compiler = cxx_compiler = None
 
@@ -444,25 +526,30 @@ def build_tf_extension(build_ext, tf_lib, options):
                     compiler_version = candidate_compiler_version
 
             else:
-                print("===========================================================================================")
+                print(
+                    "==================================================================================================="
+                )
                 print(
                     'INFO: Compiler %s (version %s) is not usable for this TensorFlow '
                     'installation. Require g++ (version >=%s, <%s).' %
                     (candidate_cxx_compiler, candidate_compiler_version, tf_compiler_version, maximum_compiler_version)
                 )
-                print("===========================================================================================")
+                print(
+                    "==================================================================================================="
+                )
 
         if cc_compiler:
-            print("===========================================================================================")
-            print('INFO: Compilers %s and %s (version %s) selected for TensorFlow plugin build.' % (
-                cc_compiler, cxx_compiler, compiler_version
-            ))
-            print("===========================================================================================")
+            print("===================================================================================================")
+            print(
+                'INFO: Compilers %s and %s (version %s) selected for TensorFlow plugin build.' %
+                (cc_compiler, cxx_compiler, compiler_version)
+            )
+            print("===================================================================================================")
 
         else:
             raise DistutilsPlatformError(
                 'Could not find compiler compatible with this TensorFlow installation.\n'
-                'Please check the NVTX-Plugins Github Repository for recommended compiler versions.\n'
+                'Please check the Github repository for recommended compiler versions.\n'
                 'To force a specific compiler version, set CC and CXX environment variables.'
             )
 
@@ -492,10 +579,167 @@ def build_tf_extension(build_ext, tf_lib, options):
                 except (AttributeError, ValueError):
                     pass
 
-                build_ext.build_extension(tf_lib)
+                # import pprint
+                # print('########################################################')
+                # print('########################################################')
+                # pprint.pprint(dir(build_ext))
+                # print('########################################################')
+                # print('########################################################')
+                # pprint.pprint(build_ext.__dict__)
+                # print('########################################################')
+                # print('########################################################')
+
+                build_ext.build_extension(ext)
         finally:
             # Revert to the default compiler settings
             customize_compiler(build_ext.compiler)
+
+
+# def build_torch_extension_v2(build_ext, global_options, torch_version):
+def build_torch_extension(build_ext, ext, options):
+    check_torch_version()
+
+    import copy
+
+    def _add_compile_flag(extension, flag):
+        extension.extra_compile_args = copy.deepcopy(extension.extra_compile_args)
+        if isinstance(extension.extra_compile_args, dict):
+            for args in extension.extra_compile_args.values():
+                args.append(flag)
+        else:
+            extension.extra_compile_args.append(flag)
+
+    def _define_torch_extension_name(extension):
+        define = '-DTORCH_EXTENSION_NAME={}'.format(extension.name.split(".")[-1])
+        if isinstance(extension.extra_compile_args, dict):
+            for args in extension.extra_compile_args.values():
+                args.append(define)
+        else:
+            extension.extra_compile_args.append(define)
+
+    def _add_gnu_cpp_abi_flag(extension):
+        # use the same CXX ABI as what PyTorch was compiled with
+        _add_compile_flag(extension, '-D_GLIBCXX_USE_CXX11_ABI=' + str(int(torch._C._GLIBCXX_USE_CXX11_ABI)))
+
+    _add_compile_flag(ext, '-DTORCH_API_INCLUDE_EXTENSION_H')
+    _define_torch_extension_name(ext)
+    _add_gnu_cpp_abi_flag(ext)
+
+    try:
+        import cffi
+        if LooseVersion(cffi.__version__) < LooseVersion('1.4.0'):
+            raise VersionError("torch.utils.ffi requires cffi version >= 1.4, but got %s" % cffi.__version__)
+    except ImportError:
+        raise ImportError("torch.utils.ffi requires the cffi package")
+
+    # Backup the options, preventing other plugins access libs that
+    # compiled with compiler of this plugin
+    options = deepcopy(options)
+
+    # Versions of PyTorch > 1.3.0 require C++14
+    pyt_compile_flags = set_flag(options['COMPILE_FLAGS'], 'std', 'c++14')
+    check_torch_is_built_with_cuda(build_ext, include_dirs=options['INCLUDES'], extra_compile_args=pyt_compile_flags)
+
+    pyt_updated_macros = set_macros(
+        macros=options['MACROS'],
+        keys_and_values=[
+            # Update HAVE_CUDA to mean that PyTorch supports CUDA.
+            ('HAVE_CUDA', "1"),
+            # Export TORCH_VERSION equal to our representation of torch.__version__.
+            # Internally it's used for backwards compatibility checks.
+            ('TORCH_VERSION', str(parse_version(torch.__version__))),
+            # Always set _GLIBCXX_USE_CXX11_ABI, since PyTorch can only detect whether it was set to 1.
+            ('_GLIBCXX_USE_CXX11_ABI', str(int(torch.compiled_with_cxx11_abi()))),
+            # PyTorch requires -DTORCH_API_INCLUDE_EXTENSION_H
+            ('TORCH_API_INCLUDE_EXTENSION_H', '1')
+        ]
+    )
+
+    ext.define_macros = pyt_updated_macros + ext.define_macros
+    ext.include_dirs = options['INCLUDES'] + ext.include_dirs
+
+    ext.sources = options['SOURCES'] + ext.sources
+
+    ext.extra_compile_args = options['COMPILE_FLAGS'] + pyt_compile_flags + ext.extra_compile_args
+    ext.extra_link_args = options['LINK_FLAGS'] + pyt_compile_flags + ext.extra_link_args
+
+    ext.library_dirs = options['LIBRARY_DIRS'] + ext.library_dirs
+    ext.libraries = options['LIBRARIES'] + ext.libraries
+
+    cc_compiler = cxx_compiler = cflags = cppflags = ldshared = None
+
+    if sys.platform.startswith('linux') and not os.getenv('CC') and not os.getenv('CXX'):
+
+        # Find the compatible compiler of the highest version
+        compiler_version = LooseVersion('0')
+
+        for candidate_cxx_compiler, candidate_compiler_version in find_gxx_compiler_in_path():
+
+            if check_compiler_abi_compatibility(candidate_cxx_compiler):
+                candidate_cc_compiler = find_matching_gcc_compiler_in_path(candidate_compiler_version)
+
+                if candidate_cc_compiler and candidate_compiler_version > compiler_version:
+                    cc_compiler = candidate_cc_compiler
+                    cxx_compiler = candidate_cxx_compiler
+                    compiler_version = candidate_compiler_version
+
+            else:
+                print(
+                    "==================================================================================================="
+                )
+                print(
+                    'INFO: Compiler %s (version %s) is not usable for this PyTorch '
+                    'installation, see the warning above.' % (candidate_cxx_compiler, candidate_compiler_version)
+                )
+                print(
+                    "==================================================================================================="
+                )
+
+        if cc_compiler:
+            print("===================================================================================================")
+            print(
+                'INFO: Compilers %s and %s (version %s) selected for PyTorch plugin build.' %
+                (cc_compiler, cxx_compiler, compiler_version)
+            )
+            print("===================================================================================================")
+
+        else:
+            raise DistutilsPlatformError(
+                'Could not find compiler compatible with this PyTorch installation.\n'
+                'Please check the Github repository for recommended compiler versions.\n'
+                'To force a specific compiler version, set CC and CXX environment variables.'
+            )
+
+        cflags, cppflags, ldshared = remove_offensive_gcc_compiler_options(compiler_version)
+
+    try:
+        with env(CC=cc_compiler, CXX=cxx_compiler, CFLAGS=cflags, CPPFLAGS=cppflags, LDSHARED=ldshared):
+            customize_compiler(build_ext.compiler)
+
+            try:
+                build_ext.compiler.compiler.remove("-DNDEBUG")
+            except (AttributeError, ValueError):
+                pass
+
+            try:
+                build_ext.compiler.compiler_so.remove("-DNDEBUG")
+            except (AttributeError, ValueError):
+                pass
+
+            try:
+                build_ext.compiler.compiler_so.remove("-Wstrict-prototypes")
+            except (AttributeError, ValueError):
+                pass
+
+            try:
+                build_ext.compiler.linker_so.remove("-Wl,-O1")
+            except (AttributeError, ValueError):
+                pass
+
+            build_ext.build_extension(ext)
+    finally:
+        # Revert to the default compiler settings
+        customize_compiler(build_ext.compiler)
 
 
 @contextmanager
@@ -525,6 +769,33 @@ def env(**kwargs):
                 del os.environ[k]
 
 
+def check_macro(macros, key):
+    return any(k == key and v for k, v in macros)
+
+
+def set_macros(macros, keys_and_values):
+
+    for key, new_value in keys_and_values:
+        macros = set_macro(macros, key, new_value)
+
+    return macros
+
+
+def set_macro(macros, key, new_value):
+    if any(k == key for k, _ in macros):
+        return [(k, new_value if k == key else v) for k, v in macros]
+    else:
+        return macros + [(key, new_value)]
+
+
+def set_flag(flags, flag, value):
+    flag = '-' + flag
+    if any(f.split('=')[0] == flag for f in flags):
+        return [('{}={}'.format(flag, value) if f.split('=')[0] == flag else f) for f in flags]
+    else:
+        return flags + ['{}={}'.format(flag, value)]
+
+
 def get_tf_include_dirs():
     import tensorflow as tf
     tf_inc = tf.sysconfig.get_include()
@@ -537,8 +808,17 @@ def get_tf_lib_dirs():
     return [tf_lib]
 
 
-def test_compile(build_ext, name, code, libraries=None, include_dirs=None, library_dirs=None, macros=None,
-                 extra_compile_preargs=None, extra_link_preargs=None):
+def test_compile(
+    build_ext,
+    name,
+    code,
+    libraries=None,
+    include_dirs=None,
+    library_dirs=None,
+    macros=None,
+    extra_compile_preargs=None,
+    extra_link_preargs=None
+):
     test_compile_dir = os.path.join(build_ext.build_temp, 'test_compile')
 
     if not os.path.exists(test_compile_dir):
@@ -558,12 +838,7 @@ def test_compile(build_ext, name, code, libraries=None, include_dirs=None, libra
     except (AttributeError, ValueError):
         pass
 
-    compiler.compile(
-        [source_file],
-        extra_preargs=extra_compile_preargs,
-        include_dirs=include_dirs,
-        macros=macros
-    )
+    compiler.compile([source_file], extra_preargs=extra_compile_preargs, include_dirs=include_dirs, macros=macros)
 
     compiler.link_shared_object(
         [object_file],
@@ -574,6 +849,45 @@ def test_compile(build_ext, name, code, libraries=None, include_dirs=None, libra
     )
 
     return shared_object_file
+
+
+def get_tf_abi(build_ext, include_dirs, lib_dirs, libs, cpp_flags):
+    cxx11_abi_macro = '_GLIBCXX_USE_CXX11_ABI'
+
+    for cxx11_abi in ['0', '1']:
+        try:
+            lib_file = test_compile(
+                build_ext,
+                'test_tensorflow_abi',
+                macros=[(cxx11_abi_macro, cxx11_abi)],
+                include_dirs=include_dirs,
+                library_dirs=lib_dirs,
+                libraries=libs,
+                extra_compile_preargs=cpp_flags,
+                code=textwrap.dedent(
+                    '''\
+                #include <string>
+                #include "tensorflow/core/framework/op.h"
+                #include "tensorflow/core/framework/op_kernel.h"
+                #include "tensorflow/core/framework/shape_inference.h"
+                void test() {
+                    auto ignore = tensorflow::strings::StrCat("a", "b");
+                }
+                '''
+                )
+            )
+
+            from tensorflow.python.framework import load_library
+            load_library.load_op_library(lib_file)
+
+            return cxx11_abi_macro, cxx11_abi
+        except (CompileError, LinkError):
+            last_err = 'Unable to determine CXX11 ABI to use with TensorFlow (see error above).'
+        except Exception:
+            last_err = 'Unable to determine CXX11 ABI to use with TensorFlow.  ' \
+                       'Last error:\n\n%s' % traceback.format_exc()
+
+    raise DistutilsPlatformError(last_err)
 
 
 def get_tf_libs(build_ext, lib_dirs, cpp_flags):
@@ -588,7 +902,8 @@ def get_tf_libs(build_ext, lib_dirs, cpp_flags):
                 code=textwrap.dedent('''\
                 void test() {
                 }
-            '''))
+            ''')
+            )
 
             from tensorflow.python.framework import load_library
             load_library.load_op_library(lib_file)
@@ -605,39 +920,19 @@ def get_tf_libs(build_ext, lib_dirs, cpp_flags):
     raise DistutilsPlatformError(last_err)
 
 
-def get_tf_abi(build_ext, include_dirs, lib_dirs, libs, cpp_flags):
-    cxx11_abi_macro = '_GLIBCXX_USE_CXX11_ABI'
-
-    for cxx11_abi in ['0', '1']:
-        try:
-            lib_file = test_compile(build_ext, 'test_tensorflow_abi',
-                                    macros=[(cxx11_abi_macro, cxx11_abi)],
-                                    include_dirs=include_dirs,
-                                    library_dirs=lib_dirs,
-                                    libraries=libs,
-                                    extra_compile_preargs=cpp_flags,
-                                    code=textwrap.dedent('''\
-                #include <string>
-                #include "tensorflow/core/framework/op.h"
-                #include "tensorflow/core/framework/op_kernel.h"
-                #include "tensorflow/core/framework/shape_inference.h"
-                void test() {
-                    auto ignore = tensorflow::strings::StrCat("a", "b");
-                }
-                ''')
-                                    )
-
-            from tensorflow.python.framework import load_library
-            load_library.load_op_library(lib_file)
-
-            return cxx11_abi_macro, cxx11_abi
-        except (CompileError, LinkError):
-            last_err = 'Unable to determine CXX11 ABI to use with TensorFlow (see error above).'
-        except Exception:
-            last_err = 'Unable to determine CXX11 ABI to use with TensorFlow.  ' \
-                       'Last error:\n\n%s' % traceback.format_exc()
-
-    raise DistutilsPlatformError(last_err)
+def check_torch_is_built_with_cuda(build_ext, include_dirs, extra_compile_args):
+    from torch.utils.cpp_extension import include_paths
+    test_compile(
+        build_ext,
+        'test_torch_cuda',
+        include_dirs=include_dirs + include_paths(cuda=True),
+        extra_compile_preargs=extra_compile_args,
+        code=textwrap.dedent('''\
+        #include <THC/THC.h>
+        void test() {
+        }
+        ''')
+    )
 
 
 def get_tf_flags(build_ext, cpp_flags):
@@ -651,8 +946,7 @@ def get_tf_flags(build_ext, cpp_flags):
         tf_include_dirs = get_tf_include_dirs()
         tf_lib_dirs = get_tf_lib_dirs()
         tf_libs = get_tf_libs(build_ext, tf_lib_dirs, cpp_flags)
-        tf_abi = get_tf_abi(build_ext, tf_include_dirs,
-                            tf_lib_dirs, tf_libs, cpp_flags)
+        tf_abi = get_tf_abi(build_ext, tf_include_dirs, tf_lib_dirs, tf_libs, cpp_flags)
 
         compile_flags = []
         for include_dir in tf_include_dirs:
@@ -674,9 +968,7 @@ def get_tf_flags(build_ext, cpp_flags):
 def determine_gcc_version(compiler):
     try:
         compiler_macros = subprocess.check_output(
-            '%s -dM -E - </dev/null' % compiler,
-            shell=True,
-            universal_newlines=True
+            '%s -dM -E - </dev/null' % compiler, shell=True, universal_newlines=True
         ).split('\n')
 
         for m in compiler_macros:
@@ -699,12 +991,9 @@ def determine_gcc_version(compiler):
 def determine_nvcc_version(compiler):
     try:
         nvcc_macros = [
-            _l for _l in subprocess.check_output(
-                '%s --version </dev/null' % compiler,
-                shell=True,
-                universal_newlines=True
-            ).split('\n')
-            if _l != ''
+            _l for _l in
+            subprocess.check_output('%s --version </dev/null' %
+                                    compiler, shell=True, universal_newlines=True).split('\n') if _l != ''
         ][-1]
 
         nvcc_version = nvcc_macros.split(", ")[-1][1:]
@@ -735,10 +1024,10 @@ def find_matching_gcc_compiler_in_path(gxx_compiler_version):
             if compiler_version == gxx_compiler_version:
                 return compiler
 
-    print("===========================================================================================")
-    print('INFO: Unable to find gcc compiler (version %s).' % gxx_compiler_version)
-    print("===========================================================================================")
-    return None
+    else:
+        print("===========================================================================================")
+        print('INFO: Unable to find gcc compiler (version %s).' % gxx_compiler_version)
+        print("===========================================================================================")
 
 
 def find_gxx_compiler_in_path():
@@ -762,6 +1051,7 @@ def find_gxx_compiler_in_path():
 
 
 def find_nvcc_compiler_in_path():
+
     for path_dir, bin_file in enumerate_binaries_in_path():
 
         if bin_file == 'nvcc':

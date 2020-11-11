@@ -1,7 +1,7 @@
-# ! /usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nvtx.plugins.c_extensions import tensorflow_nvtx_lib
-from nvtx.plugins.tf.ext_utils import load_library
-
-nvtx_tf_ops = load_library(tensorflow_nvtx_lib)
-
-from nvtx.plugins.tf import keras
-from nvtx.plugins.tf import ops
-
-
 __all__ = [
-    "nvtx_tf_ops",
-
-    # sub packages
-    "keras",
-    "ops"
+    "SingletonMetaClass",
 ]
+
+
+class SingletonMetaClass(type):
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+
+        if cls not in cls._instances:
+            cls._instances[cls] = super(SingletonMetaClass, cls).__call__(*args, **kwargs)
+
+        return cls._instances[cls]

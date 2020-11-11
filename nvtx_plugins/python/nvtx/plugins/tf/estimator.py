@@ -42,11 +42,15 @@ class NVTXHook(BaseCallback, tf.estimator.SessionRunHook):
 
     def before_run(self, run_context):
         if self.step_counter >= self.skip_n_steps:
-            self.open_marker(self.iteration_message.format(iter=self.step_counter))
+            self.open_marker(self.iteration_message.format(
+                iter=self.step_counter
+            ))
 
     def after_run(self, run_context, run_values):
         if self.step_counter >= self.skip_n_steps:
-            self.close_marker(self.iteration_message.format(iter=self.step_counter))
+            self.close_marker(self.iteration_message.format(
+                iter=self.step_counter
+            ))
         self.step_counter += 1
 
     def end(self, session):
