@@ -48,12 +48,15 @@ def _nvtx_start_grad(op, grad, marker_id, domain_handle):
     if not isinstance(marker_id, tf.Tensor) and marker_id is None:
         raise RuntimeError('Error in nvtx range %s. '
                            'Make sure all nvtx ranges are closed' % op.name)
-
-    grad, null_grad = nvtx_tf_ops.nvtx_end(inputs=grad,
-        marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
-    return [grad, null_grad, None, None]
-
+    if (grad is None):
+        grad, null_output = nvtx_tf_ops.nvtx_end(op.inputs[0],
+            marker_id=marker_id, domain_handle=domain_handle,
+            grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
+    else:
+        grad, null_output = nvtx_tf_ops.nvtx_end(inputs=grad,
+            marker_id=marker_id, domain_handle=domain_handle,
+            grad_message=op.inputs[2], grad_domain_name=op.inputs[3])
+    return [grad, null_output, None, None]
 
 @ops.RegisterGradient('NvtxEnd')
 def _nvtx_end_grad(op, grad, null_grad):
@@ -121,17 +124,25 @@ def start(inputs, message, domain_name=None,
                                                    initializer=tf.zeros_initializer,
                                                    trainable=True)
 
-    inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
-
-    inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
-        inputs=inputs, null_input=null_input,
-        message=message, domain_name=domain_name, name=name)
-
-    if should_unstack:
-        inputs = tf.unstack(inputs, axis=0)
-
-    return inputs, (marker_id, domain_handle, grad_message, grad_domain_name)
-
+    if not isinstance(inputs, (list, tuple)):
+        inputs, marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+            inputs=inputs, null_input=null_input, message=message, domain_name=domain_name, name=name)
+        return inputs, (marker_id, domain_handle, grad_message, grad_domain_name)
+    else:
+        input_is_tuple = False
+        if isinstance(inputs, tuple):
+            input_is_tuple = True
+            inputs = list(inputs)
+        with tf.control_dependencies(inputs):
+            inputs[0], marker_id, domain_handle = nvtx_tf_ops.nvtx_start(
+                inputs=inputs[0], null_input=null_input, message=message, domain_name=domain_name, name=name)
+        with tf.control_dependencies([inputs[0], marker_id, domain_handle]):
+            for i in range(len(inputs)-1):
+                inputs[i+1] = tf.identity(inputs[i+1])
+        if input_is_tuple:
+            return tuple(inputs),(marker_id, domain_handle, grad_message, grad_domain_name)
+        else:
+            return inputs, (marker_id, domain_handle, grad_message, grad_domain_name)
 
 def end(inputs, nvtx_context, name=None):
     """An identity operation with a side effect of closing an NVTX marker.
@@ -166,18 +177,27 @@ def end(inputs, nvtx_context, name=None):
 
     marker_id, domain_handle, grad_message, grad_domain_name = nvtx_context
 
-    inputs, should_unstack = _maybe_convert_list_to_tensor(inputs)
-
-    output, null_output = nvtx_tf_ops.nvtx_end(inputs=inputs,
-        marker_id=marker_id, domain_handle=domain_handle,
-        grad_message=grad_message, grad_domain_name=grad_domain_name, name=name
-    )
-
-    if should_unstack:
-        output = tf.unstack(output, axis=0)
-
-    return output
-
+    if not isinstance(inputs, (list, tuple)):
+        inputs, null_output = nvtx_tf_ops.nvtx_end(
+            inputs = inputs, marker_id=marker_id, domain_handle=domain_handle,
+            grad_message=grad_message, grad_domain_name=grad_domain_name, name=name)
+        return inputs
+    else:
+        input_is_tuple = False
+        if isinstance(inputs, tuple):
+            input_is_tuple = True
+            inputs = list(inputs)
+        with tf.control_dependencies(inputs):
+            inputs[0],null_output = nvtx_tf_ops.nvtx_end(
+                marker_id=marker_id, domain_handle=domain_handle,
+                inputs = inputs[0], grad_message=grad_message, grad_domain_name=grad_domain_name, name=name)
+        with tf.control_dependencies([inputs[0], marker_id, domain_handle]):
+            for i in range(len(inputs)-1):
+                inputs[i+1] = tf.identity(inputs[i+1])
+        if input_is_tuple:
+            return tuple(inputs)
+        else:
+            return inputs
 
 def trace(message, domain_name=None,
           grad_message=None, grad_domain_name=None,

@@ -30,6 +30,7 @@ REGISTER_OP("NvtxStart")
     .Output("marker_id: int64")
     .Output("domain_handle: int64")
     .Attr("T: type")
+    .SetIsStateful()
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(0));
       auto* handle_data = c->input_handle_shapes_and_types(0);
@@ -66,6 +67,7 @@ REGISTER_OP("NvtxEnd")
     .Output("output: T")
     .Output("null_output: float32")
     .Attr("T: type")
+    .SetIsStateful()
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(0));
       auto* handle_data = c->input_handle_shapes_and_types(0);
