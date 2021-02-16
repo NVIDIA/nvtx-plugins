@@ -33,11 +33,11 @@ def _maybe_convert_list_to_tensor(inputs):
     inputs_were_processed = False
 
     if isinstance(inputs, (list, tuple)) and \
-        all([isinstance(x, tf.Tensor) for x in inputs]):
+        all([isinstance(x, (tf.Tensor, tf.Variable)) for x in inputs]):
         inputs = tf.stack(inputs, axis=0, name="nvtx_trace_inputs")
         inputs_were_processed = True
 
-    assert isinstance(inputs, tf.Tensor)
+    assert isinstance(inputs, (tf.Tensor, tf.Variable)), "Not a tensor or variable: {}".format(inputs)
 
     return inputs, inputs_were_processed
 
