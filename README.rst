@@ -3,6 +3,9 @@
 NVTX Plugins for Deep Learning
 ===============================
 
+**THIS PROJECT IS NOT MAINTAINED ANYMORE**
+==========================================
+
 .. overview-begin-marker-do-not-remove
 
 
