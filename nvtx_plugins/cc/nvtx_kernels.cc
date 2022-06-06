@@ -205,3 +205,24 @@ class NvtxEndOp : public OpKernel {
 
 TF_CALL_NUMBER_TYPES(REGISTER_GPU_KERNEL);
 #undef REGISTER_GPU_KERNEL
+
+#define REGISTER_CPU_KERNEL(type)                                 \
+  REGISTER_KERNEL_BUILDER(Name("NvtxStart")                       \
+                              .Device(DEVICE_CPU)                 \
+                              .HostMemory("message")              \
+                              .HostMemory("domain_name")          \
+                              .HostMemory("marker_id")            \
+                              .HostMemory("domain_handle")        \
+                              .TypeConstraint<type>("T"),         \
+                          NvtxStartOp<type>);                     \
+  REGISTER_KERNEL_BUILDER(Name("NvtxEnd")                         \
+                              .Device(DEVICE_CPU)                 \
+                              .HostMemory("marker_id")            \
+                              .HostMemory("domain_handle")        \
+                              .HostMemory("grad_message")         \
+                              .HostMemory("grad_domain_name")     \
+                              .TypeConstraint<type>("T"),         \
+                          NvtxEndOp<type>);
+
+TF_CALL_NUMBER_TYPES(REGISTER_CPU_KERNEL);
+#undef REGISTER_CPU_KERNEL
