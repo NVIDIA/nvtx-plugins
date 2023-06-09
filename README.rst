@@ -5,6 +5,10 @@ NVTX Plugins for Deep Learning
 
 **THIS PROJECT IS NOT MAINTAINED ANYMORE**
 ==========================================
+We recommend using Tensorflow-Profiler: https://www.tensorflow.org/guide/profiler
+
+---------------------------------------------------------------------------------
+
 
 .. overview-begin-marker-do-not-remove
 
